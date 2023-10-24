@@ -2,9 +2,9 @@
 % Please edit documentation in R/specify_bsvar_msh.R
 \name{specify_starting_values_bsvar_msh}
 \alias{specify_starting_values_bsvar_msh}
-\title{R6 Class Representing StartingValuesBSVAR-MSH}
+\title{R6 Class Representing StartingValuesBSVARMSH}
 \description{
-The class StartingValuesBSVAR-MSH presents starting values for the bsvar model with Markov Switching Heteroskedasticity.
+The class StartingValuesBSVARMSH presents starting values for the bsvar model with Markov Switching Heteroskedasticity.
 }
 \examples{
 # starting values for a bsvar model for a 3-variable system
@@ -34,7 +34,7 @@ sv$set_starting_values(sv_list)      # providing to the class object
 
 }
 \section{Super class}{
-\code{bsvars::StartingValuesBSVAR} -> \code{StartingValuesBSVAR-MSH}
+\code{bsvars::StartingValuesBSVAR} -> \code{StartingValuesBSVARMSH}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
@@ -43,7 +43,8 @@ sv$set_starting_values(sv_list)      # providing to the class object
 
 \item{\code{B}}{an \code{NxN} matrix of starting values for the parameter \eqn{B}.}
 
-\item{\code{hyper}}{a \code{5}-vector of starting values for the shrinkage hyper-parameters of the hierarchical prior distribution.}
+\item{\code{hyper}}{a \code{(2*N+1)x2} matrix of starting values for the shrinkage hyper-parameters of the 
+hierarchical prior distribution.}
 
 \item{\code{sigma2}}{an \code{NxM} matrix of starting values for the MS state-specific variances of the structural shocks. Its elements sum to value \code{M} over the rows.}
 
@@ -58,15 +59,15 @@ sv$set_starting_values(sv_list)      # providing to the class object
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-StartingValuesBSVAR-MSH-new}{\code{specify_starting_values_bsvar_msh$new()}}
-\item \href{#method-StartingValuesBSVAR-MSH-get_starting_values}{\code{specify_starting_values_bsvar_msh$get_starting_values()}}
-\item \href{#method-StartingValuesBSVAR-MSH-set_starting_values}{\code{specify_starting_values_bsvar_msh$set_starting_values()}}
-\item \href{#method-StartingValuesBSVAR-MSH-clone}{\code{specify_starting_values_bsvar_msh$clone()}}
+\item \href{#method-StartingValuesBSVARMSH-new}{\code{specify_starting_values_bsvar_msh$new()}}
+\item \href{#method-StartingValuesBSVARMSH-get_starting_values}{\code{specify_starting_values_bsvar_msh$get_starting_values()}}
+\item \href{#method-StartingValuesBSVARMSH-set_starting_values}{\code{specify_starting_values_bsvar_msh$set_starting_values()}}
+\item \href{#method-StartingValuesBSVARMSH-clone}{\code{specify_starting_values_bsvar_msh$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-StartingValuesBSVAR-MSH-new"></a>}}
-\if{latex}{\out{\hypertarget{method-StartingValuesBSVAR-MSH-new}{}}}
+\if{html}{\out{<a id="method-StartingValuesBSVARMSH-new"></a>}}
+\if{latex}{\out{\hypertarget{method-StartingValuesBSVARMSH-new}{}}}
 \subsection{Method \code{new()}}{
 Create new starting values StartingValuesBSVAR-MS.
 \subsection{Usage}{
@@ -93,8 +94,8 @@ Starting values StartingValuesBSVAR-MS.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-StartingValuesBSVAR-MSH-get_starting_values"></a>}}
-\if{latex}{\out{\hypertarget{method-StartingValuesBSVAR-MSH-get_starting_values}{}}}
+\if{html}{\out{<a id="method-StartingValuesBSVARMSH-get_starting_values"></a>}}
+\if{latex}{\out{\hypertarget{method-StartingValuesBSVARMSH-get_starting_values}{}}}
 \subsection{Method \code{get_starting_values()}}{
 Returns the elements of the starting values StartingValuesBSVAR-MS as a \code{list}.
 \subsection{Usage}{
@@ -114,10 +115,10 @@ sv$get_starting_values()   # show starting values as list
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-StartingValuesBSVAR-MSH-set_starting_values"></a>}}
-\if{latex}{\out{\hypertarget{method-StartingValuesBSVAR-MSH-set_starting_values}{}}}
+\if{html}{\out{<a id="method-StartingValuesBSVARMSH-set_starting_values"></a>}}
+\if{latex}{\out{\hypertarget{method-StartingValuesBSVARMSH-set_starting_values}{}}}
 \subsection{Method \code{set_starting_values()}}{
-Returns the elements of the starting values StartingValuesBSVAR-MSH as a \code{list}.
+Returns the elements of the starting values StartingValuesBSVARMSH as a \code{list}.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{specify_starting_values_bsvar_msh$set_starting_values(last_draw)}\if{html}{\out{</div>}}
 }
@@ -130,7 +131,7 @@ Returns the elements of the starting values StartingValuesBSVAR-MSH as a \code{l
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-An object of class StartingValuesBSVAR-MS including the last draw of the current MCMC as the starting value to be passed to the continuation of the MCMC estimation using \code{bsvar_msh()}.
+An object of class StartingValuesBSVAR-MS including the last draw of the current MCMC as the starting value to be passed to the continuation of the MCMC estimation using \code{estimate()}.
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
@@ -149,8 +150,8 @@ sv$set_starting_values(sv_list)      # providing to the class object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-StartingValuesBSVAR-MSH-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-StartingValuesBSVAR-MSH-clone}{}}}
+\if{html}{\out{<a id="method-StartingValuesBSVARMSH-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-StartingValuesBSVARMSH-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

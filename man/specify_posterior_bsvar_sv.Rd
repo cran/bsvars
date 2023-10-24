@@ -2,19 +2,19 @@
 % Please edit documentation in R/specify_bsvar_sv.R
 \name{specify_posterior_bsvar_sv}
 \alias{specify_posterior_bsvar_sv}
-\title{R6 Class Representing PosteriorBSVAR-SV}
+\title{R6 Class Representing PosteriorBSVARSV}
 \description{
-The class PosteriorBSVAR-SV contains posterior output and the specification including 
+The class PosteriorBSVARSV contains posterior output and the specification including 
 the last MCMC draw for the bsvar model with Stochastic Volatility heteroskedasticity.
 Note that due to the thinning of the MCMC output the starting value in element \code{last_draw}
 might not be equal to the last draw provided in element \code{posterior}.
 }
 \examples{
-# This is a function that is used within estimate_bsvar()
+# This is a function that is used within estimate()
 data(us_fiscal_lsuw)
 specification  = specify_bsvar_sv$new(us_fiscal_lsuw, p = 4)
 set.seed(123)
-estimate       = estimate_bsvar_sv(10, specification)
+estimate       = estimate(specification, 5, thin = 1)
 class(estimate)
 
 
@@ -25,7 +25,7 @@ class(estimate)
 data(us_fiscal_lsuw)
 specification  = specify_bsvar_sv$new(us_fiscal_lsuw)
 set.seed(123)
-estimate       = estimate_bsvar_sv(10, specification)
+estimate       = estimate(specification, 5, thin = 1)
 estimate$get_posterior()
 
 
@@ -40,13 +40,10 @@ specification  = specify_bsvar_sv$new(us_fiscal_lsuw, p = 4)
 set.seed(123)
 
 # run the burn-in
-burn_in        = estimate_bsvar_sv(10, specification)
-
-# get the last draw
-last_draw      = burn_in$get_last_draw()
+burn_in        = estimate(specification, 5, thin = 1)
 
 # estimate the model
-posterior      = estimate_bsvar_sv(10, last_draw)
+posterior      = estimate(burn_in, 5, thin = 1)
 
 
 ## ------------------------------------------------
@@ -61,15 +58,15 @@ specification  = specify_bsvar_sv$new(us_fiscal_lsuw, p = 4)
 
 # estimate the model
 set.seed(123)
-posterior      = estimate_bsvar_sv(10, specification, thin = 1)
+posterior      = estimate(specification, 5, thin = 1)
 
 # check normalisation status beforehand
 posterior$is_normalised()
 
 # normalise the posterior
 BB            = posterior$last_draw$starting_values$B      # get the last draw of B
-B_hat         = diag(sign(diag(BB))) \%*\% BB                # set positive diagonal elements
-bsvars::normalise_posterior(posterior, B_hat)              # draws in posterior are normalised
+B_hat         = diag((-1) * sign(diag(BB))) \%*\% BB         # set negative diagonal elements
+normalise_posterior(posterior, B_hat)                      # draws in posterior are normalised
 
 # check normalisation status afterwards
 posterior$is_normalised()
@@ -90,7 +87,7 @@ specification  = specify_bsvar_sv$new(us_fiscal_lsuw, p = 4)
 
 # estimate the model
 set.seed(123)
-posterior      = estimate_bsvar_sv(10, specification, thin = 1)
+posterior      = estimate(specification, 5, thin = 1)
 
 # check normalisation status beforehand
 posterior$is_normalised()
@@ -98,19 +95,20 @@ posterior$is_normalised()
 # normalise the posterior
 BB            = posterior$last_draw$starting_values$B      # get the last draw of B
 B_hat         = diag(sign(diag(BB))) \%*\% BB                # set positive diagonal elements
-bsvars::normalise_posterior(posterior, B_hat)              # draws in posterior are normalised
+normalise_posterior(posterior, B_hat)                      # draws in posterior are normalised
 
 # check normalisation status afterwards
 posterior$is_normalised()
 
 }
 \seealso{
-\code{\link{estimate_bsvar_sv}}, \code{\link{specify_bsvar_sv}}
+\code{\link{estimate}}, \code{\link{specify_bsvar_sv}}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
-\item{\code{last_draw}}{an object of class BSVAR-SV with the last draw of the current MCMC run as the starting value to be passed to the continuation of the MCMC estimation using \code{bsvar_sv()}.}
+\item{\code{last_draw}}{an object of class BSVARSV with the last draw of the current MCMC run 
+as the starting value to be passed to the continuation of the MCMC estimation using \code{estimate()}.}
 
 \item{\code{posterior}}{a list containing Bayesian estimation output.}
 }
@@ -119,19 +117,19 @@ posterior$is_normalised()
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-PosteriorBSVAR-SV-new}{\code{specify_posterior_bsvar_sv$new()}}
-\item \href{#method-PosteriorBSVAR-SV-get_posterior}{\code{specify_posterior_bsvar_sv$get_posterior()}}
-\item \href{#method-PosteriorBSVAR-SV-get_last_draw}{\code{specify_posterior_bsvar_sv$get_last_draw()}}
-\item \href{#method-PosteriorBSVAR-SV-is_normalised}{\code{specify_posterior_bsvar_sv$is_normalised()}}
-\item \href{#method-PosteriorBSVAR-SV-set_normalised}{\code{specify_posterior_bsvar_sv$set_normalised()}}
-\item \href{#method-PosteriorBSVAR-SV-clone}{\code{specify_posterior_bsvar_sv$clone()}}
+\item \href{#method-PosteriorBSVARSV-new}{\code{specify_posterior_bsvar_sv$new()}}
+\item \href{#method-PosteriorBSVARSV-get_posterior}{\code{specify_posterior_bsvar_sv$get_posterior()}}
+\item \href{#method-PosteriorBSVARSV-get_last_draw}{\code{specify_posterior_bsvar_sv$get_last_draw()}}
+\item \href{#method-PosteriorBSVARSV-is_normalised}{\code{specify_posterior_bsvar_sv$is_normalised()}}
+\item \href{#method-PosteriorBSVARSV-set_normalised}{\code{specify_posterior_bsvar_sv$set_normalised()}}
+\item \href{#method-PosteriorBSVARSV-clone}{\code{specify_posterior_bsvar_sv$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PosteriorBSVAR-SV-new"></a>}}
-\if{latex}{\out{\hypertarget{method-PosteriorBSVAR-SV-new}{}}}
+\if{html}{\out{<a id="method-PosteriorBSVARSV-new"></a>}}
+\if{latex}{\out{\hypertarget{method-PosteriorBSVARSV-new}{}}}
 \subsection{Method \code{new()}}{
-Create a new posterior output PosteriorBSVAR-SV.
+Create a new posterior output PosteriorBSVARSV.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{specify_posterior_bsvar_sv$new(specification_bsvar, posterior_bsvar)}\if{html}{\out{</div>}}
 }
@@ -139,19 +137,20 @@ Create a new posterior output PosteriorBSVAR-SV.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{specification_bsvar}}{an object of class BSVAR-SV with the last draw of the current MCMC run as the starting value.}
+\item{\code{specification_bsvar}}{an object of class BSVARSV with the last draw of the current MCMC 
+run as the starting value.}
 
 \item{\code{posterior_bsvar}}{a list containing Bayesian estimation output.}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-A posterior output PosteriorBSVAR-SV.
+A posterior output PosteriorBSVARSV.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PosteriorBSVAR-SV-get_posterior"></a>}}
-\if{latex}{\out{\hypertarget{method-PosteriorBSVAR-SV-get_posterior}{}}}
+\if{html}{\out{<a id="method-PosteriorBSVARSV-get_posterior"></a>}}
+\if{latex}{\out{\hypertarget{method-PosteriorBSVARSV-get_posterior}{}}}
 \subsection{Method \code{get_posterior()}}{
 Returns a list containing Bayesian estimation.
 \subsection{Usage}{
@@ -163,7 +162,7 @@ Returns a list containing Bayesian estimation.
 \preformatted{data(us_fiscal_lsuw)
 specification  = specify_bsvar_sv$new(us_fiscal_lsuw)
 set.seed(123)
-estimate       = estimate_bsvar_sv(10, specification)
+estimate       = estimate(specification, 5, thin = 1)
 estimate$get_posterior()
 
 }
@@ -173,10 +172,11 @@ estimate$get_posterior()
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PosteriorBSVAR-SV-get_last_draw"></a>}}
-\if{latex}{\out{\hypertarget{method-PosteriorBSVAR-SV-get_last_draw}{}}}
+\if{html}{\out{<a id="method-PosteriorBSVARSV-get_last_draw"></a>}}
+\if{latex}{\out{\hypertarget{method-PosteriorBSVARSV-get_last_draw}{}}}
 \subsection{Method \code{get_last_draw()}}{
-Returns an object of class BSVAR-SV with the last draw of the current MCMC run as the starting value to be passed to the continuation of the MCMC estimation using \code{bsvar_sv()}.
+Returns an object of class BSVARSV with the last draw of the current MCMC run as 
+the starting value to be passed to the continuation of the MCMC estimation using \code{estimate()}.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{specify_posterior_bsvar_sv$get_last_draw()}\if{html}{\out{</div>}}
 }
@@ -190,13 +190,10 @@ specification  = specify_bsvar_sv$new(us_fiscal_lsuw, p = 4)
 set.seed(123)
 
 # run the burn-in
-burn_in        = estimate_bsvar_sv(10, specification)
-
-# get the last draw
-last_draw      = burn_in$get_last_draw()
+burn_in        = estimate(specification, 5, thin = 1)
 
 # estimate the model
-posterior      = estimate_bsvar_sv(10, last_draw)
+posterior      = estimate(burn_in, 5, thin = 1)
 
 }
 \if{html}{\out{</div>}}
@@ -205,8 +202,8 @@ posterior      = estimate_bsvar_sv(10, last_draw)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PosteriorBSVAR-SV-is_normalised"></a>}}
-\if{latex}{\out{\hypertarget{method-PosteriorBSVAR-SV-is_normalised}{}}}
+\if{html}{\out{<a id="method-PosteriorBSVARSV-is_normalised"></a>}}
+\if{latex}{\out{\hypertarget{method-PosteriorBSVARSV-is_normalised}{}}}
 \subsection{Method \code{is_normalised()}}{
 Returns \code{TRUE} if the posterior has been normalised using \code{normalise_posterior()} and \code{FALSE} otherwise.
 \subsection{Usage}{
@@ -223,15 +220,15 @@ specification  = specify_bsvar_sv$new(us_fiscal_lsuw, p = 4)
 
 # estimate the model
 set.seed(123)
-posterior      = estimate_bsvar_sv(10, specification, thin = 1)
+posterior      = estimate(specification, 5, thin = 1)
 
 # check normalisation status beforehand
 posterior$is_normalised()
 
 # normalise the posterior
 BB            = posterior$last_draw$starting_values$B      # get the last draw of B
-B_hat         = diag(sign(diag(BB))) \%*\% BB                # set positive diagonal elements
-bsvars::normalise_posterior(posterior, B_hat)              # draws in posterior are normalised
+B_hat         = diag((-1) * sign(diag(BB))) \%*\% BB         # set negative diagonal elements
+normalise_posterior(posterior, B_hat)                      # draws in posterior are normalised
 
 # check normalisation status afterwards
 posterior$is_normalised()
@@ -243,8 +240,8 @@ posterior$is_normalised()
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PosteriorBSVAR-SV-set_normalised"></a>}}
-\if{latex}{\out{\hypertarget{method-PosteriorBSVAR-SV-set_normalised}{}}}
+\if{html}{\out{<a id="method-PosteriorBSVARSV-set_normalised"></a>}}
+\if{latex}{\out{\hypertarget{method-PosteriorBSVARSV-set_normalised}{}}}
 \subsection{Method \code{set_normalised()}}{
 Sets the private indicator \code{normalised} to TRUE.
 \subsection{Usage}{
@@ -271,7 +268,7 @@ specification  = specify_bsvar_sv$new(us_fiscal_lsuw, p = 4)
 
 # estimate the model
 set.seed(123)
-posterior      = estimate_bsvar_sv(10, specification, thin = 1)
+posterior      = estimate(specification, 5, thin = 1)
 
 # check normalisation status beforehand
 posterior$is_normalised()
@@ -279,7 +276,7 @@ posterior$is_normalised()
 # normalise the posterior
 BB            = posterior$last_draw$starting_values$B      # get the last draw of B
 B_hat         = diag(sign(diag(BB))) \%*\% BB                # set positive diagonal elements
-bsvars::normalise_posterior(posterior, B_hat)              # draws in posterior are normalised
+normalise_posterior(posterior, B_hat)                      # draws in posterior are normalised
 
 # check normalisation status afterwards
 posterior$is_normalised()
@@ -291,8 +288,8 @@ posterior$is_normalised()
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PosteriorBSVAR-SV-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-PosteriorBSVAR-SV-clone}{}}}
+\if{html}{\out{<a id="method-PosteriorBSVARSV-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-PosteriorBSVARSV-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

@@ -1,8 +1,8 @@
 
-#' R6 Class Representing PriorBSVAR-SV
+#' R6 Class Representing PriorBSVARSV
 #'
 #' @description
-#' The class PriorBSVAR-SV presents a prior specification for the bsvar model with Stochastic Volatility heteroskedasticity.
+#' The class PriorBSVARSV presents a prior specification for the bsvar model with Stochastic Volatility heteroskedasticity.
 #' 
 #' @examples 
 #' prior = specify_prior_bsvar_sv$new(N = 3, p = 1) # a prior for 3-variable example with one lag
@@ -10,7 +10,7 @@
 #' 
 #' @export
 specify_prior_bsvar_sv = R6::R6Class(
-  "PriorBSVAR-SV",
+  "PriorBSVARSV",
   
   inherit = specify_prior_bsvar,
   
@@ -28,17 +28,37 @@ specify_prior_bsvar_sv = R6::R6Class(
     #' @field B_nu a positive integer greater of equal than \code{N}, a shape parameter of the generalised-normal prior distribution for the structural matrix \eqn{B}.
     B_nu       = NA,
     
-    #' @field hyper_nu a positive scalar, the shape parameter of the inverted-gamma 2 prior distribution for the two overall shrinkage parameters for matrices \eqn{B} and \eqn{A}.
-    hyper_nu   = NA,
+    #' @field hyper_nu_B a positive scalar, the shape parameter of the inverted-gamma 2 prior
+    #' for the overall shrinkage parameter for matrix \eqn{B}.
+    hyper_nu_B = NA,
     
-    #' @field hyper_a a positive scalar, the shape parameter of the gamma prior for the two overall shrinkage parameters.
-    hyper_a    = NA,
+    #' @field hyper_a_B a positive scalar, the shape parameter of the gamma prior
+    #' for the second-level hierarchy for the overall shrinkage parameter for matrix \eqn{B}.
+    hyper_a_B  = NA,
     
-    #' @field hyper_V a positive scalar,  the shape parameter of the inverted-gamma 2 for the level 3 hierarchy of shrinkage parameters.
-    hyper_V    = NA,
+    #' @field hyper_s_BB a positive scalar, the scale parameter of the inverted-gamma 2 prior
+    #' for the third-level of hierarchy for overall shrinkage parameter for matrix \eqn{B}.
+    hyper_s_BB  = NA,
     
-    #' @field hyper_S a positive scalar,  the scale parameter of the inverted-gamma 2 for the level 3 hierarchy of shrinkage parameters.
-    hyper_S    = NA,
+    #' @field hyper_nu_BB a positive scalar, the shape parameter of the inverted-gamma 2 prior
+    #' for the third-level of hierarchy for overall shrinkage parameter for matrix \eqn{B}.
+    hyper_nu_BB  = NA,
+    
+    #' @field hyper_nu_A a positive scalar, the shape parameter of the inverted-gamma 2 prior 
+    #' for the overall shrinkage parameter for matrix \eqn{A}.
+    hyper_nu_A  = NA,
+    
+    #' @field hyper_a_A a positive scalar, the shape parameter of the gamma prior
+    #' for the second-level hierarchy for the overall shrinkage parameter for matrix \eqn{A}.
+    hyper_a_A  = NA,
+    
+    #' @field hyper_s_AA a positive scalar, the scale parameter of the inverted-gamma 2 prior
+    #' for the third-level of hierarchy for overall shrinkage parameter for matrix \eqn{A}.
+    hyper_s_AA  = NA,
+    
+    #' @field hyper_nu_AA a positive scalar, the shape parameter of the inverted-gamma 2 prior
+    #' for the third-level of hierarchy for overall shrinkage parameter for matrix \eqn{A}.
+    hyper_nu_AA  = NA,
     
     #' @field sv_a_ a positive scalar, the shape parameter of the gamma prior in the hierarchical prior for \eqn{\sigma^2_{\omega}}. 
     sv_a_      = numeric(),
@@ -47,11 +67,11 @@ specify_prior_bsvar_sv = R6::R6Class(
     sv_s_      = numeric(),
     
     #' @description
-    #' Create a new prior specification PriorBSVAR-SV.
+    #' Create a new prior specification PriorBSVARSV.
     #' @param N a positive integer - the number of dependent variables in the model.
     #' @param p a positive integer - the autoregressive lag order of the SVAR model.
     #' @param stationary an \code{N} logical vector - its element set to \code{FALSE} sets the prior mean for the autoregressive parameters of the \code{N}th equation to the white noise process, otherwise to random walk.
-    #' @return A new prior specification PriorBSVAR-SV.
+    #' @return A new prior specification PriorBSVARSV.
     initialize = function(N, p, stationary = rep(FALSE, N)){
       stopifnot("Argument N must be a positive integer number." = N > 0 & N %% 1 == 0)
       stopifnot("Argument p must be a positive integer number." = p > 0 & p %% 1 == 0)
@@ -63,7 +83,7 @@ specify_prior_bsvar_sv = R6::R6Class(
     }, # END initialize
 
     #' @description
-    #' Returns the elements of the prior specification PriorBSVAR-SV as a \code{list}.
+    #' Returns the elements of the prior specification PriorBSVARSV as a \code{list}.
     #' 
     #' @examples 
     #' # a prior for 3-variable example with four lags
@@ -76,10 +96,14 @@ specify_prior_bsvar_sv = R6::R6Class(
         A_V_inv  = self$A_V_inv,
         B_V_inv  = self$B_V_inv,
         B_nu     = self$B_nu,
-        hyper_nu = self$hyper_nu,
-        hyper_a  = self$hyper_a,
-        hyper_V  = self$hyper_V,
-        hyper_S  = self$hyper_S,
+        hyper_nu_B  = self$hyper_nu_B,
+        hyper_a_B   = self$hyper_a_B,
+        hyper_s_BB  = self$hyper_s_BB,
+        hyper_nu_BB = self$hyper_nu_BB,
+        hyper_nu_A  = self$hyper_nu_A,
+        hyper_a_A   = self$hyper_a_A,
+        hyper_s_AA  = self$hyper_s_AA,
+        hyper_nu_AA = self$hyper_nu_AA,
         sv_a_    = self$sv_a_,
         sv_s_    = self$sv_s_
       )
@@ -90,10 +114,10 @@ specify_prior_bsvar_sv = R6::R6Class(
 
 
 
-#' R6 Class Representing StartingValuesBSVAR-SV
+#' R6 Class Representing StartingValuesBSVARSV
 #'
 #' @description
-#' The class StartingValuesBSVAR-SV presents starting values for the bsvar model with Stochastic Volatility heteroskedasticity.
+#' The class StartingValuesBSVARSV presents starting values for the bsvar model with Stochastic Volatility heteroskedasticity.
 #' 
 #' @examples 
 #' # starting values for a bsvar model for a 3-variable system
@@ -101,7 +125,7 @@ specify_prior_bsvar_sv = R6::R6Class(
 #' 
 #' @export
 specify_starting_values_bsvar_sv = R6::R6Class(
-  "StartingValuesBSVAR-SV",
+  "StartingValuesBSVARSV",
   
   inherit = specify_starting_values_bsvar,
   
@@ -113,8 +137,9 @@ specify_starting_values_bsvar_sv = R6::R6Class(
     #' @field B an \code{NxN} matrix of starting values for the parameter \eqn{B}. 
     B             = matrix(),
     
-    #' @field hyper a \code{5}-vector of starting values for the shrinkage hyper-parameters of the hierarchical prior distribution.
-    hyper         = numeric(),
+    #' @field hyper a \code{(2*N+1)x2} matrix of starting values for the shrinkage hyper-parameters of the 
+    #' hierarchical prior distribution. 
+    hyper         = matrix(),
     
     #' @field h an \code{NxT} matrix with the starting values of the log-volatility processes.
     h             = matrix(),
@@ -124,6 +149,9 @@ specify_starting_values_bsvar_sv = R6::R6Class(
     
     #' @field omega an \code{N}-vector with values of SV process conditional standard deviations.
     omega         = numeric(),
+    
+    #' @field sigma2v an \code{N}-vector with values of SV process conditional variances.
+    sigma2v       = numeric(),
     
     #' @field S an \code{NxT} integer matrix with the auxiliary mixture component indicators.
     S             = matrix(),
@@ -135,11 +163,11 @@ specify_starting_values_bsvar_sv = R6::R6Class(
     s_            = numeric(),
     
     #' @description
-    #' Create new starting values StartingValuesBSVAR-SV.
+    #' Create new starting values StartingValuesBSVARSV.
     #' @param N a positive integer - the number of dependent variables in the model.
     #' @param p a positive integer - the autoregressive lag order of the SVAR model.
     #' @param T a positive integer - the the time series dimension of the dependent variable matrix \eqn{Y}.
-    #' @return Starting values StartingValuesBSVAR-SV.
+    #' @return Starting values StartingValuesBSVARSV.
     initialize = function(N, p, T){
       stopifnot("Argument N must be a positive integer number." = N > 0 & N %% 1 == 0)
       stopifnot("Argument p must be a positive integer number." = p > 0 & p %% 1 == 0)
@@ -150,13 +178,14 @@ specify_starting_values_bsvar_sv = R6::R6Class(
       self$h              = matrix(rnorm(N * T, sd = .01), N, T)
       self$rho            = rep(.5, N)
       self$omega          = rep(.1, N)
+      self$sigma2v        = rep(.1^2, N)
       self$S              = matrix(1, N, T)
       self$sigma2_omega   = rep(1, N)
       self$s_             = rep(0.05, N)
     }, # END initialize
     
     #' @description
-    #' Returns the elements of the starting values StartingValuesBSVAR-SV as a \code{list}.
+    #' Returns the elements of the starting values StartingValuesBSVARSV as a \code{list}.
     #' 
     #' @examples 
     #' # starting values for a bsvar model with 1 lag for a 3-variable system
@@ -171,6 +200,7 @@ specify_starting_values_bsvar_sv = R6::R6Class(
         h                 = self$h,
         rho               = self$rho,
         omega             = self$omega,
+        sigma2v           = self$sigma2v,
         S                 = self$S,
         sigma2_omega      = self$sigma2_omega,
         s_                = self$s_
@@ -180,7 +210,7 @@ specify_starting_values_bsvar_sv = R6::R6Class(
     #' @description
     #' Returns the elements of the starting values StartingValuesBSVAR_SV as a \code{list}.
     #' @param last_draw a list containing the last draw of the current MCMC run.
-    #' @return An object of class StartingValuesBSVAR including the last draw of the current MCMC as the starting value to be passed to the continuation of the MCMC estimation using \code{bsvar()}.
+    #' @return An object of class StartingValuesBSVAR including the last draw of the current MCMC as the starting value to be passed to the continuation of the MCMC estimation using \code{estimate()}.
     #' 
     #' @examples 
     #' # starting values for a bsvar model with 1 lag for a 3-variable system
@@ -198,6 +228,7 @@ specify_starting_values_bsvar_sv = R6::R6Class(
       self$h              = last_draw$h
       self$rho            = last_draw$rho
       self$omega          = last_draw$omega
+      self$sigma2v        = last_draw$sigma2v
       self$S              = last_draw$S
       self$sigma2_omega   = last_draw$sigma2_omega
       self$s_             = last_draw$s_
@@ -210,9 +241,9 @@ specify_starting_values_bsvar_sv = R6::R6Class(
 #' R6 Class representing the specification of the BSVAR model with Stochastic Volatility heteroskedasticity.
 #'
 #' @description
-#' The class BSVAR-SV presents complete specification for the BSVAR model with Stochastic Volatility heteroskedasticity.
+#' The class BSVARSV presents complete specification for the BSVAR model with Stochastic Volatility heteroskedasticity.
 #' 
-#' @seealso \code{\link{estimate_bsvar_sv}}, \code{\link{specify_posterior_bsvar_sv}}
+#' @seealso \code{\link{estimate}}, \code{\link{specify_posterior_bsvar_sv}}
 #' 
 #' @examples 
 #' data(us_fiscal_lsuw)
@@ -223,7 +254,7 @@ specify_starting_values_bsvar_sv = R6::R6Class(
 #' 
 #' @export
 specify_bsvar_sv = R6::R6Class(
-  "BSVAR-SV",
+  "BSVARSV",
   
   public = list(
     
@@ -233,26 +264,31 @@ specify_bsvar_sv = R6::R6Class(
     #' @field identification an object IdentificationBSVARs with the identifying restrictions. 
     identification         = list(),
     
-    #' @field prior an object PriorBSVAR-SV with the prior specification. 
+    #' @field prior an object PriorBSVARSV with the prior specification. 
     prior                  = list(),
     
     #' @field data_matrices an object DataMatricesBSVAR with the data matrices.
     data_matrices          = list(),
     
-    #' @field starting_values an object StartingValuesBSVAR-SV with the starting values.
+    #' @field starting_values an object StartingValuesBSVARSV with the starting values.
     starting_values        = list(),
     
+    #' @field centred_sv a logical value - if true a centred parameterisation of the Stochastic Volatility process is estimated. Otherwise, its non-centred parameterisation is estimated. See Lütkepohl, Shang, Uzeda, Woźniak (2022) for more info.
+    centred_sv             = logical(),
+    
     #' @description
-    #' Create a new specification of the BSVAR model with Stochastic Volatility heteroskedasticity, BSVAR-SV.
+    #' Create a new specification of the BSVAR model with Stochastic Volatility heteroskedasticity, BSVARSV.
     #' @param data a \code{(T+p)xN} matrix with time series data.
     #' @param p a positive integer providing model's autoregressive lag order.
     #' @param B a logical \code{NxN} matrix containing value \code{TRUE} for the elements of the structural matrix \eqn{B} to be estimated and value \code{FALSE} for exclusion restrictions to be set to zero.
+    #' @param centred_sv a logical value. If \code{FALSE} a non-centred Stochastic Volatility processes for conditional variances are estimated. Otherwise, a centred process is estimated.
     #' @param stationary an \code{N} logical vector - its element set to \code{FALSE} sets the prior mean for the autoregressive parameters of the \code{N}th equation to the white noise process, otherwise to random walk.
-    #' @return A new complete specification for the bsvar model with Stochastic Volatility heteroskedasticity, BSVAR-SV.
+    #' @return A new complete specification for the bsvar model with Stochastic Volatility heteroskedasticity, BSVARSV.
     initialize = function(
     data,
     p = 1L,
     B,
+    centred_sv = FALSE,
     stationary = rep(FALSE, ncol(data))
     ) {
       stopifnot("Argument p has to be a positive integer." = ((p %% 1) == 0 & p > 0))
@@ -273,6 +309,7 @@ specify_bsvar_sv = R6::R6Class(
       self$identification  = specify_identification_bsvars$new(N, B)
       self$prior           = specify_prior_bsvar_sv$new(N, p, stationary)
       self$starting_values = specify_starting_values_bsvar_sv$new(N, self$p, T)
+      self$centred_sv      = centred_sv
     }, # END initialize
     
     #' @description
@@ -306,7 +343,7 @@ specify_bsvar_sv = R6::R6Class(
     }, # END get_identification
     
     #' @description
-    #' Returns the prior specification as the PriorBSVAR-SV object.
+    #' Returns the prior specification as the PriorBSVARSV object.
     #' 
     #' @examples 
     #' data(us_fiscal_lsuw)
@@ -321,7 +358,7 @@ specify_bsvar_sv = R6::R6Class(
     }, # END get_prior
     
     #' @description
-    #' Returns the starting values as the StartingValuesBSVAR-SV object.
+    #' Returns the starting values as the StartingValuesBSVARSV object.
     #' 
     #' @examples 
     #' data(us_fiscal_lsuw)
@@ -339,49 +376,51 @@ specify_bsvar_sv = R6::R6Class(
 
 
 
-#' R6 Class Representing PosteriorBSVAR-SV
+#' R6 Class Representing PosteriorBSVARSV
 #'
 #' @description
-#' The class PosteriorBSVAR-SV contains posterior output and the specification including 
+#' The class PosteriorBSVARSV contains posterior output and the specification including 
 #' the last MCMC draw for the bsvar model with Stochastic Volatility heteroskedasticity.
 #' Note that due to the thinning of the MCMC output the starting value in element \code{last_draw}
 #' might not be equal to the last draw provided in element \code{posterior}.
 #' 
-#' @seealso \code{\link{estimate_bsvar_sv}}, \code{\link{specify_bsvar_sv}}
+#' @seealso \code{\link{estimate}}, \code{\link{specify_bsvar_sv}}
 #' 
 #' @examples 
-#' # This is a function that is used within estimate_bsvar()
+#' # This is a function that is used within estimate()
 #' data(us_fiscal_lsuw)
 #' specification  = specify_bsvar_sv$new(us_fiscal_lsuw, p = 4)
 #' set.seed(123)
-#' estimate       = estimate_bsvar_sv(10, specification)
+#' estimate       = estimate(specification, 5, thin = 1)
 #' class(estimate)
 #' 
 #' @export
 specify_posterior_bsvar_sv = R6::R6Class(
-  "PosteriorBSVAR-SV",
-  
+  "PosteriorBSVARSV",
+   
   private = list(
     normalised = FALSE
   ), # END private
   
   public = list(
     
-    #' @field last_draw an object of class BSVAR-SV with the last draw of the current MCMC run as the starting value to be passed to the continuation of the MCMC estimation using \code{bsvar_sv()}. 
+    #' @field last_draw an object of class BSVARSV with the last draw of the current MCMC run 
+    #' as the starting value to be passed to the continuation of the MCMC estimation using \code{estimate()}. 
     last_draw = list(),
     
     #' @field posterior a list containing Bayesian estimation output.
     posterior = list(),
     
     #' @description
-    #' Create a new posterior output PosteriorBSVAR-SV.
-    #' @param specification_bsvar an object of class BSVAR-SV with the last draw of the current MCMC run as the starting value.
+    #' Create a new posterior output PosteriorBSVARSV.
+    #' @param specification_bsvar an object of class BSVARSV with the last draw of the current MCMC 
+    #' run as the starting value.
     #' @param posterior_bsvar a list containing Bayesian estimation output.
-    #' @return A posterior output PosteriorBSVAR-SV.
+    #' @return A posterior output PosteriorBSVARSV.
     initialize = function(specification_bsvar, posterior_bsvar) {
       
-      stopifnot("Argument specification_bsvar must be of class BSVAR-SV." = any(class(specification_bsvar) == "BSVAR-SV"))
-      stopifnot("Argument posterior_bsvar must must contain MCMC output." = is.list(posterior_bsvar) & is.array(posterior_bsvar$B) & is.array(posterior_bsvar$A) & is.matrix(posterior_bsvar$hyper) & is.array(posterior_bsvar$h))
+      stopifnot("Argument specification_bsvar must be of class BSVARSV." = any(class(specification_bsvar) == "BSVARSV"))
+      stopifnot("Argument posterior_bsvar must must contain MCMC output." = is.list(posterior_bsvar) & is.array(posterior_bsvar$B) & is.array(posterior_bsvar$A) & is.array(posterior_bsvar$hyper) & is.array(posterior_bsvar$h))
       
       self$last_draw    = specification_bsvar
       self$posterior    = posterior_bsvar
@@ -394,7 +433,7 @@ specify_posterior_bsvar_sv = R6::R6Class(
     #' data(us_fiscal_lsuw)
     #' specification  = specify_bsvar_sv$new(us_fiscal_lsuw)
     #' set.seed(123)
-    #' estimate       = estimate_bsvar_sv(10, specification)
+    #' estimate       = estimate(specification, 5, thin = 1)
     #' estimate$get_posterior()
     #' 
     get_posterior       = function(){
@@ -402,7 +441,8 @@ specify_posterior_bsvar_sv = R6::R6Class(
     }, # END get_posterior
     
     #' @description
-    #' Returns an object of class BSVAR-SV with the last draw of the current MCMC run as the starting value to be passed to the continuation of the MCMC estimation using \code{bsvar_sv()}.
+    #' Returns an object of class BSVARSV with the last draw of the current MCMC run as 
+    #' the starting value to be passed to the continuation of the MCMC estimation using \code{estimate()}.
     #' 
     #' @examples
     #' data(us_fiscal_lsuw)
@@ -412,13 +452,10 @@ specify_posterior_bsvar_sv = R6::R6Class(
     #' set.seed(123)
     #' 
     #' # run the burn-in
-    #' burn_in        = estimate_bsvar_sv(10, specification)
-    #' 
-    #' # get the last draw
-    #' last_draw      = burn_in$get_last_draw()
+    #' burn_in        = estimate(specification, 5, thin = 1)
     #' 
     #' # estimate the model
-    #' posterior      = estimate_bsvar_sv(10, last_draw)
+    #' posterior      = estimate(burn_in, 5, thin = 1)
     #' 
     get_last_draw      = function(){
       self$last_draw$clone()
@@ -436,15 +473,15 @@ specify_posterior_bsvar_sv = R6::R6Class(
     #' 
     #' # estimate the model
     #' set.seed(123)
-    #' posterior      = estimate_bsvar_sv(10, specification, thin = 1)
+    #' posterior      = estimate(specification, 5, thin = 1)
     #' 
     #' # check normalisation status beforehand
     #' posterior$is_normalised()
     #' 
     #' # normalise the posterior
     #' BB            = posterior$last_draw$starting_values$B      # get the last draw of B
-    #' B_hat         = diag(sign(diag(BB))) %*% BB                # set positive diagonal elements
-    #' bsvars::normalise_posterior(posterior, B_hat)              # draws in posterior are normalised
+    #' B_hat         = diag((-1) * sign(diag(BB))) %*% BB         # set negative diagonal elements
+    #' normalise_posterior(posterior, B_hat)                      # draws in posterior are normalised
     #' 
     #' # check normalisation status afterwards
     #' posterior$is_normalised()
@@ -469,7 +506,7 @@ specify_posterior_bsvar_sv = R6::R6Class(
     #' 
     #' # estimate the model
     #' set.seed(123)
-    #' posterior      = estimate_bsvar_sv(10, specification, thin = 1)
+    #' posterior      = estimate(specification, 5, thin = 1)
     #' 
     #' # check normalisation status beforehand
     #' posterior$is_normalised()
@@ -477,7 +514,7 @@ specify_posterior_bsvar_sv = R6::R6Class(
     #' # normalise the posterior
     #' BB            = posterior$last_draw$starting_values$B      # get the last draw of B
     #' B_hat         = diag(sign(diag(BB))) %*% BB                # set positive diagonal elements
-    #' bsvars::normalise_posterior(posterior, B_hat)              # draws in posterior are normalised
+    #' normalise_posterior(posterior, B_hat)                      # draws in posterior are normalised
     #' 
     #' # check normalisation status afterwards
     #' posterior$is_normalised()

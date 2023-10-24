@@ -7,7 +7,9 @@ using namespace arma;
 
 
 /*______________________function orthogonal_complement_matrix_TW______________________*/
-mat orthogonal_complement_matrix_TW (const mat& x) {
+// [[Rcpp::interfaces(cpp)]]
+// [[Rcpp::export]]
+arma::mat orthogonal_complement_matrix_TW (const arma::mat& x) {
   // # x is a mxn matrix and m>n
   // # the function returns a mx(m-n) matrix, out, that is an orthogonal complement of x, i.e.:
   // # t(x)%*%out = 0 and det(cbind(x,out))!=0
@@ -22,6 +24,8 @@ mat orthogonal_complement_matrix_TW (const mat& x) {
 
 
 
+// [[Rcpp::interfaces(cpp)]]
+// [[Rcpp::export]]
 arma::vec log_mean (
     arma::mat     log_density     // n x s matrix with log density ordinates
 ) {
@@ -30,3 +34,24 @@ arma::vec log_mean (
   vec log_numerator   = c_log_density - log(S) + log( sum( exp(log_density.each_col() - c_log_density), 1) );
   return log_numerator;
 } // log_mean 
+
+
+
+// [[Rcpp::interfaces(cpp)]]
+// [[Rcpp::export]]
+std::string ordinal(
+    int n
+) {
+  std::string suffix;
+  if (n % 10 == 1 && n % 100 != 11) {
+    suffix = "st";
+  } else if (n % 10 == 2 && n % 100 != 12) {
+    suffix = "nd";
+  } else if (n % 10 == 3 && n % 100 != 13) {
+    suffix = "rd";
+  } else {
+    suffix = "th";
+  }
+  return std::to_string(n) + suffix;
+} // END ordinal
+

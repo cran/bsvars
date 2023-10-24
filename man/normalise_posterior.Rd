@@ -8,7 +8,7 @@ normalise_posterior(posterior, B_hat)
 }
 \arguments{
 \item{posterior}{posterior estimation outcome - an object of either of classes: 
-PosteriorBSVAR, PosteriorBSVAR-MSH, PosteriorBSVAR-MIX, or PosteriorBSVAR-SV
+PosteriorBSVAR, PosteriorBSVARMSH, PosteriorBSVARMIX, or PosteriorBSVARSV
 containing, amongst other draws, the \code{S} draws from the posterior 
 distribution of the \code{NxN} matrix of contemporaneous relationships \eqn{B}. 
 These draws are to be normalised with respect to:}
@@ -38,15 +38,15 @@ specification  = specify_bsvar_sv$new(us_fiscal_lsuw, p = 4)
 set.seed(123)
 
 # run the burn-in
-burn_in        = estimate_bsvar_sv(10, specification)
+burn_in        = estimate(specification, 10)
 
 # estimate the model
-posterior      = estimate_bsvar_sv(50, burn_in$get_last_draw())
+posterior      = estimate(burn_in, 10, thin = 1)
 
 # normalise the posterior
 BB            = posterior$last_draw$starting_values$B      # get the last draw of B
-B_hat         = diag(sign(diag(BB))) \%*\% BB                # set positive diagonal elements
-bsvars::normalise_posterior(posterior, B_hat)              # draws in posterior are normalised
+B_hat         = diag((-1) * sign(diag(BB))) \%*\% BB         # set negative diagonal elements
+normalise_posterior(posterior, B_hat)                      # draws in posterior are normalised
 
 }
 \references{
@@ -54,7 +54,7 @@ Waggoner, D.F., and Zha, T., (2003) Likelihood Preserving Normalization in Multi
 \emph{Journal of Econometrics}, \bold{114}(2), 329--47, \doi{https://doi.org/10.1016/S0304-4076(03)00087-3}.
 }
 \seealso{
-\code{\link{estimate_bsvar}}, \code{\link{estimate_bsvar_msh}}, \code{\link{estimate_bsvar_sv}}, \code{\link{estimate_bsvar_mix}}
+\code{\link{estimate}}
 }
 \author{
 Tomasz Woźniak \email{wozniak.tom@pm.me}

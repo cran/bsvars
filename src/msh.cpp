@@ -9,8 +9,10 @@ using namespace arma;
 
 
 
-vec Ergodic_PR_TR (
-  const mat&  PR_TR               // MxM
+// [[Rcpp::interfaces(cpp, r)]]
+// [[Rcpp::export]]
+arma::vec Ergodic_PR_TR (
+  const arma::mat&  PR_TR               // MxM
 ) {
   const int   M = PR_TR.n_rows;
   
@@ -24,8 +26,10 @@ vec Ergodic_PR_TR (
   
   
   
-mat count_regime_transitions (
-    const mat& xi
+// [[Rcpp::interfaces(cpp, r)]]
+// [[Rcpp::export]]
+arma::mat count_regime_transitions (
+    const arma::mat& xi
 ) {
   const int M = xi.n_rows;
   const int T = xi.n_cols;
@@ -40,38 +44,44 @@ mat count_regime_transitions (
 
 
 
-rowvec rDirichlet1 (
-    const rowvec&   alpha     // Kx1
+// [[Rcpp::interfaces(cpp, r)]]
+// [[Rcpp::export]]
+arma::rowvec rDirichlet1 (
+    const arma::rowvec&   alpha     // Kx1
 ) {
   const int K   = alpha.size();
   rowvec    draw(K);
   for (int k=0; k<K; k++) {
-    draw(k)     = R::rgamma(alpha(k), 1);
+    draw(k)     = randg(distr_param(alpha(k), 1.0));
   }
   return draw/sum(draw);
 } // END rDirichlet1
 
 
 
-rowvec rIG2_Dirichlet1 (
-    const rowvec&  s,           // 1xM
-    const rowvec&  nu           // 1xM
+// [[Rcpp::interfaces(cpp, r)]]
+// [[Rcpp::export]]
+arma::rowvec rIG2_Dirichlet1 (
+    const arma::rowvec&  s,           // 1xM
+    const arma::rowvec&  nu           // 1xM
 ) {
   const int   M     = s.n_cols;
   rowvec      draw  = s;
   for (int m=0; m<M; m++) {
-    draw(m)        /= R::rchisq(nu(m));
+    draw(m)        /= chi2rnd(nu(m));
   }
   return draw/sum(draw);
 } // END rIG2_Dirichlet1
 
 
 
-mat filtering_msh (
-  const mat&  U,                  // NxT
-  const mat&  sigma,              // NxM
-  const mat&  PR_TR,              // MxM
-  const vec&  pi_0                // Mx1
+// [[Rcpp::interfaces(cpp, r)]]
+// [[Rcpp::export]]
+arma::mat filtering_msh (
+  const arma::mat&  U,                  // NxT
+  const arma::mat&  sigma,              // NxM
+  const arma::mat&  PR_TR,              // MxM
+  const arma::vec&  pi_0                // Mx1
 ) {
   const int   T = U.n_cols;
   const int   N = U.n_rows;
@@ -103,10 +113,12 @@ mat filtering_msh (
 
 
 
-mat smoothing_msh (
-  const mat&  U,                  // NxT
-  const mat&  PR_TR,              // MxM
-  const mat&  filtered            // MxT
+// [[Rcpp::interfaces(cpp, r)]]
+// [[Rcpp::export]]
+arma::mat smoothing_msh (
+  const arma::mat&  U,                  // NxT
+  const arma::mat&  PR_TR,              // MxM
+  const arma::mat&  filtered            // MxT
 ) {
   const int   T = U.n_cols;
   const int   M = PR_TR.n_rows;
@@ -116,6 +128,13 @@ mat smoothing_msh (
   
   for (int t=T-2; t>=0; --t) {
     smoothed.col(t)   = (PR_TR * (smoothed.col(t+1)/(PR_TR.t() * filtered.col(t)) )) % filtered.col(t);
+    if (any(smoothed.col(t) < 0) || any(smoothed.col(t) > 1)) {
+      for (int m=0; m<M; m++) {
+        if (smoothed(m,t) > 1) {smoothed(m,t) = 1;}
+        if (smoothed(m,t) < 0) {smoothed(m,t) = 0;}
+      }
+      smoothed.col(t) = smoothed.col(t) / accu(smoothed.col(t));
+    }
   } // END t loop
   
   return smoothed;
@@ -123,13 +142,15 @@ mat smoothing_msh (
 
 
 
+// [[Rcpp::interfaces(cpp, r)]]
+// [[Rcpp::export]]
 void sample_Markov_process_msh (
-    mat&        aux_xi,             // MxT
-    const mat&  U,                  // NxT
-    const mat&  aux_sigma2,         // NxM
-    const mat&  aux_PR_TR,         // MxM
-    const vec&  aux_pi_0,          // Mx1
-    const bool  finiteM = true
+    arma::mat&        aux_xi,             // MxT
+    const arma::mat&  U,                  // NxT
+    const arma::mat&  aux_sigma2,         // NxM
+    const arma::mat&  aux_PR_TR,         // MxM
+    const arma::vec&  aux_pi_0,          // Mx1
+    const bool        finiteM = true
 ) {
   // the function changes the value of aux_xi by reference (filling it with a new draw)
   
@@ -178,14 +199,14 @@ void sample_Markov_process_msh (
 
 
 
-// Metropolis-Hastings algorithm for stationary Markov Chains (Fruehwirth-Schnatter 2006, p.341)
-//---------------------------------------------------------------------------------------------------
+// [[Rcpp::interfaces(cpp, r)]]
+// [[Rcpp::export]]
 void sample_transition_probabilities (
-    mat&          aux_PR_TR,    // MxM 
-    vec&          aux_pi_0,     // Mx1
-    const mat&    aux_xi,       // MxT
-    const List&   prior,         // a list of priors - original dimensions
-    const bool    MSnotMIX = true
+    arma::mat&          aux_PR_TR,    // MxM 
+    arma::vec&          aux_pi_0,     // Mx1
+    const arma::mat&    aux_xi,       // MxT
+    const Rcpp::List&   prior,         // a list of priors - original dimensions
+    const bool          MSnotMIX = true
 ) {
   // the function changes the value of aux_PR_TR and aux_pi_0 by reference (filling it with a new draw)
   const int   M           = aux_PR_TR.n_rows;
@@ -216,14 +237,16 @@ void sample_transition_probabilities (
 
 
 
+// [[Rcpp::interfaces(cpp, r)]]
+// [[Rcpp::export]]
 void sample_variances_msh (
-    mat&          aux_sigma2, // NxM
-    const mat&    aux_B,      // NxN
-    const mat&    aux_A,      // NxK
-    const mat&    Y,          // NxT dependent variables
-    const mat&    X,          // KxT explanatory variables
-    const mat&    aux_xi,     // MxT state variables
-    const List&   prior       // a list of priors - original dimensions
+    arma::mat&          aux_sigma2, // NxM
+    const arma::mat&    aux_B,      // NxN
+    const arma::mat&    aux_A,      // NxK
+    const arma::mat&    Y,          // NxT dependent variables
+    const arma::mat&    X,          // KxT explanatory variables
+    const arma::mat&    aux_xi,     // MxT state variables
+    const Rcpp::List&   prior       // a list of priors - original dimensions
 ) {
   // the function changes the value of aux_sigma2 by reference (filling it with a new draw)
   const int   M     = aux_xi.n_rows;

@@ -14,9 +14,11 @@ using namespace arma;
 // fixed to one draw, sampling without replacement, and changed output type to int
 // IMPORTANT: always #include <RcppArmadilloExtensions/sample.h>
 //---------------------------------------------------------------------------------------------------
+// [[Rcpp::interfaces(cpp)]]
+// [[Rcpp::export]]
 int csample_num1 (
-    NumericVector x,
-    NumericVector prob = NumericVector::create()
+    Rcpp::NumericVector x,
+    Rcpp::NumericVector prob = NumericVector::create()
 ) {
   bool replace = false;
   NumericVector ret = Rcpp::RcppArmadillo::sample(x, 1, replace, prob);
@@ -64,7 +66,7 @@ Rcpp::List logSDDR_homoskedasticity (
   double inv_sqrt_s_      = 0.0;
   vec sample_prior_s_(S);
   if ( sample_s_ ) {
-    sample_prior_s_       = prior_s_/as<vec>(Rcpp::rchisq(S, 3));
+    sample_prior_s_       = prior_s_/chi2rnd( 3, S );
     inv_sqrt_s_           = as_scalar(mean(pow(sample_prior_s_, -0.5)));
   } else {
     inv_sqrt_s_           = pow(prior_s_, -0.5);

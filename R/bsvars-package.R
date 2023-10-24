@@ -56,7 +56,8 @@
 #' \itemize{
 #'   \item homoskedastic model with unit variances
 #'   \item heteroskedastic model with stationary Markov switching in the variances
-#'   \item heteroskedastic model with Stochastic Volatility process for variances
+#'   \item heteroskedastic model with non-centred Stochastic Volatility process for variances
+#'   \item heteroskedastic model with centred Stochastic Volatility process for variances
 #'   \item non-normal model with a finite mixture of normal components and component-specific variances
 #'   \item heteroskedastic model with sparse Markov switching in the variances where the number of heteroskedastic components is estimated
 #'   \item non-normal model with a sparse mixture of normal components and component-specific variances where the number of heteroskedastic components is estimated
@@ -68,9 +69,9 @@
 #' @importFrom GIGrvg rgig
 #' @importFrom R6 R6Class
 #' @importFrom Rcpp sourceCpp
-#' @importFrom RcppTN rtn
 #' @import RcppProgress
-#' @importFrom R6 R6Class
+#' @importFrom RcppTN rtn
+#' @importFrom stochvol svsample_fast_cpp
 #' @note This package is currently in active development. Your comments,
 #' suggestions and requests are warmly welcome!
 #' @author Tomasz Woźniak \email{wozniak.tom@pm.me}
@@ -83,17 +84,28 @@
 #' data(us_fiscal_lsuw)
 #' 
 #' # specify the model and set seed
-#' specification  = specify_bsvar_sv$new(us_fiscal_lsuw, p = 4)
+#' specification  = specify_bsvar_sv$new(us_fiscal_lsuw, p = 2)
 #' set.seed(123)
 #' 
 #' # run the burn-in
-#' burn_in        = estimate_bsvar_sv(10, specification)
+#' burn_in        = estimate(specification, 10)
 #' 
 #' # estimate the model
-#' posterior      = estimate_bsvar_sv(50, burn_in$get_last_draw())
+#' posterior      = estimate(burn_in, 10, thin = 2)
 #' 
-#' # normalise the posterior
-#' BB            = posterior$last_draw$starting_values$B      # get the last draw of B
-#' B_hat         = diag(sign(diag(BB))) %*% BB                # set positive diagonal elements
-#' bsvars::normalise_posterior(posterior, B_hat)              # draws in posterior are normalised
+#' # compute impulse responses 2 years ahead
+#' irf           = compute_impulse_responses(posterior, horizon = 8)
+#' 
+#' # compute forecast error variance decomposition 2 years ahead
+#' fevd           = compute_variance_decompositions(posterior, horizon = 8)
+#' 
+#' # workflow with the pipe |>
+#' ############################################################
+#' set.seed(123)
+#' us_fiscal_lsuw |>
+#'   specify_bsvar_sv$new(p = 2) |>
+#'   estimate(S = 10) |> 
+#'   estimate(S = 20) |> 
+#'   compute_variance_decompositions(horizon = 8) -> fevds
+#' 
 NULL

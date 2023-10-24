@@ -10,6 +10,8 @@ using namespace arma;
 
 /*______________________function do_rgig1______________________*/
 // utility function copied from package factorstochvol
+// [[Rcpp::interfaces(cpp)]]
+// [[Rcpp::export]]
 double do_rgig1(
     double lambda, 
     double chi, 
@@ -24,9 +26,11 @@ double do_rgig1(
 
 /*______________________function cholesky_tridiagonal______________________*/
 // utility function from file precision_sampler.cpp
-List cholesky_tridiagonal(
-    const vec&    omega_diag,
-    const double& omega_offdiag
+// [[Rcpp::interfaces(cpp)]]
+// [[Rcpp::export]]
+Rcpp::List cholesky_tridiagonal(
+    const arma::vec&    omega_diag,
+    const double&       omega_offdiag
 ) {
   const int T = omega_diag.n_elem - 1;
   vec chol_diag(T+1);
@@ -43,10 +47,12 @@ List cholesky_tridiagonal(
 
 /*______________________function forward_algorithm______________________*/
 // utility function from file precision_sampler.cpp
-vec forward_algorithm(
-    const vec& chol_diag,
-    const vec& chol_offdiag,
-    const vec& covector
+// [[Rcpp::interfaces(cpp)]]
+// [[Rcpp::export]]
+arma::vec forward_algorithm(
+    const arma::vec& chol_diag,
+    const arma::vec& chol_offdiag,
+    const arma::vec& covector
 ) {
   const int T = chol_diag.n_elem - 1;
   vec htmp(T+1);
@@ -61,10 +67,12 @@ vec forward_algorithm(
 
 /*______________________function backward_algorithm______________________*/
 // utility function from file precision_sampler.cpp
-vec backward_algorithm(
-    const vec& chol_diag,
-    const vec& chol_offdiag,
-    const vec& htmp
+// [[Rcpp::interfaces(cpp)]]
+// [[Rcpp::export]]
+arma::vec backward_algorithm(
+    const arma::vec& chol_diag,
+    const arma::vec& chol_offdiag,
+    const arma::vec& htmp
 ) {
   const int T = chol_diag.size() - 1;
   vec h(T+1);
@@ -79,13 +87,15 @@ vec backward_algorithm(
 
 /*______________________function precision_sampler_ar1______________________*/
 // utility function from file precision_sampler.cpp
-vec precision_sampler_ar1(
-    const vec&     precision_diag,
-    const double&  precision_offdiag,
-    const vec&     location
+// [[Rcpp::interfaces(cpp)]]
+// [[Rcpp::export]]
+arma::vec precision_sampler_ar1(
+    const arma::vec&     precision_diag,
+    const double&        precision_offdiag,
+    const arma::vec&     location
 ) {
   int T               = location.n_rows;
-  vec  epsilon        = rnorm(T);                             // sample normal draws using Rcpp::rnorm for compatibility with R's set.seed()
+  vec  epsilon(T, fill::randn);
   List precision_chol = cholesky_tridiagonal(precision_diag, precision_offdiag);    // Cholesky decomposition using a dedicated technique
   vec  aa             = forward_algorithm(precision_chol["chol_diag"],              // this forward substitution can be performed outside of the loop
                                           precision_chol["chol_offdiag"],
@@ -100,9 +110,11 @@ vec precision_sampler_ar1(
 
 /*______________________function inverse_transform_sampling______________________*/
 // utility function from file utils_latent_states.cc from the source code of package stochvol
-uvec inverse_transform_sampling (
-    const vec&  mixprob,
-    const int   T
+// [[Rcpp::interfaces(cpp)]]
+// [[Rcpp::export]]
+arma::uvec inverse_transform_sampling (
+    const arma::vec&  mixprob,
+    const int         T
 ) {
   uvec r(T);
   for (int j = 0; j < T; j++) {
@@ -134,8 +146,10 @@ uvec inverse_transform_sampling (
 
 /*______________________function find_mixture_indicator_cdf______________________*/
 // utility function from file utils_latent_states.cc from the source code of package stochvol
-vec find_mixture_indicator_cdf (
-  const vec& datanorm           // provide all that is conditionally normal
+// [[Rcpp::interfaces(cpp)]]
+// [[Rcpp::export]]
+arma::vec find_mixture_indicator_cdf (
+  const arma::vec& datanorm           // provide all that is conditionally normal
 ){
   // fixed values for auxiliary mixture
   const NumericVector alpha_s = NumericVector::create(1.92677,1.34744,0.73504,0.02266,0-0.85173,-1.97278,-3.46788,-5.55246,-8.68384,-14.65000);
@@ -157,17 +171,22 @@ vec find_mixture_indicator_cdf (
 
 
 /*______________________function svar_nc1______________________*/
-List svar_nc1 (
-  rowvec&         aux_h_n,            // 1xT
+// [[Rcpp::interfaces(cpp)]]
+// [[Rcpp::export]]
+Rcpp::List svar_nc1 (
+  arma::rowvec&   aux_h_n,            // 1xT
   double&         aux_rho_n,
   double&         aux_omega_n,
+  double&         aux_sigma2v_n,
   double&         aux_sigma2_omega_n, // omega prior hyper-parameter 
   double&         aux_s_n,             // scale of IG2 prior for aux_sigma2_omega_n
-  urowvec&        aux_S_n,            // 1xT
-  const rowvec&   u,                  // 1xT
-  const List&     prior,
+  arma::urowvec&  aux_S_n,            // 1xT
+  const arma::rowvec&   u,                  // 1xT
+  const Rcpp::List&     prior,
   bool            sample_s_ = true
 ) {
+  // sampler for the non-centred parameterisation of the SV process
+  
   // fixed values for auxiliary mixture
   const NumericVector alpha_s = NumericVector::create(1.92677,1.34744,0.73504,0.02266,0-0.85173,-1.97278,-3.46788,-5.55246,-8.68384,-14.65000);
   const NumericVector sigma_s = NumericVector::create(0.11265,0.17788,0.26768,0.40611,0.62699,0.98583,1.57469,2.54498,4.16591,7.33342);
@@ -198,7 +217,7 @@ List svar_nc1 (
   
   // sample aux_s_n
   if ( sample_s_ ) {
-    aux_s_n               = (prior_sv_s_ + 2 * aux_sigma2_omega_n)/R::rchisq(3 + 2 * prior_sv_a_);
+    aux_s_n               = (prior_sv_s_ + 2 * aux_sigma2_omega_n)/chi2rnd(3 + 2 * prior_sv_a_);
   }
   
   // sample aux_sigma2_omega
@@ -209,7 +228,7 @@ List svar_nc1 (
   double    aux_rho_var = as_scalar(pow(hm1*hm1.t(), -1));
   double    aux_rho_mean = as_scalar(aux_rho_var * hm1*aux_h_n.cols(1,T-1).t());
   double    upper_bound = pow(1-aux_sigma2_omega_n, 0.5);
-  aux_rho_n             = RcppTN::rtn1(aux_rho_mean, pow(aux_rho_var, -0.5),-upper_bound,upper_bound);
+  aux_rho_n             = RcppTN::rtn1(aux_rho_mean, pow(aux_rho_var, 0.5),-upper_bound,upper_bound);
   
   mat       H_rho_new(T, T, fill::eye);
   H_rho_new.diag(-1)   -= aux_rho_n;
@@ -219,7 +238,7 @@ List svar_nc1 (
   // sample aux_omega
   double    V_omega_inv = 1/( as_scalar(aux_h_n * diagmat(sigma_S_inv) * aux_h_n.t()) + pow(aux_sigma2_omega_n, -1) );
   double    omega_bar   = as_scalar(aux_h_n * diagmat(sigma_S_inv) * (U - alpha_S).t());
-  double    omega_aux   = R::rnorm(V_omega_inv*omega_bar, sqrt(V_omega_inv) );
+  double    omega_aux   = randn( distr_param(V_omega_inv*omega_bar, sqrt(V_omega_inv) ));
   
   // sample aux_h
   mat       V_h         = pow(omega_aux, 2) * diagmat(sigma_S_inv) + HH_rho;
@@ -229,16 +248,24 @@ List svar_nc1 (
   // ASIS
   rowvec    aux_h_tilde = omega_aux * h_aux;
   double    hHHh        = as_scalar( aux_h_tilde * HH_rho * aux_h_tilde.t() );
-  double    sigma2_aux  = do_rgig1( -0.5*(T-1), hHHh, 1/aux_sigma2_omega_n );
+  aux_sigma2v_n         = do_rgig1( -0.5*(T-1), hHHh, 1/aux_sigma2_omega_n );
   int       ss=1;
   if (R::runif(0,1)<0.5) ss *= -1;
-  aux_omega_n           = ss * sqrt(sigma2_aux);
+  aux_omega_n           = ss * sqrt(aux_sigma2v_n);
   aux_h_n               = aux_h_tilde / aux_omega_n;
+  
+  // ASIS: resample aux_rho
+  hm1                   = aux_h_n.cols(0,T-2);
+  aux_rho_var           = as_scalar(pow(hm1*hm1.t(), -1));
+  aux_rho_mean          = as_scalar(aux_rho_var * hm1*aux_h_n.cols(1,T-1).t());
+  upper_bound           = pow(1-aux_sigma2_omega_n, 0.5);
+  aux_rho_n             = RcppTN::rtn1(aux_rho_mean, pow(aux_rho_var, 0.5),-upper_bound,upper_bound);
   
   return List::create(
     _["aux_h_n"]              = aux_h_n,
     _["aux_rho_n"]            = aux_rho_n,
     _["aux_omega_n"]          = aux_omega_n,
+    _["aux_sigma2v_n"]        = aux_sigma2v_n,
     _["aux_sigma2_omega_n"]   = aux_sigma2_omega_n,
     _["aux_s_n"]              = aux_s_n,
     _["aux_S_n"]              = aux_S_n
@@ -246,3 +273,87 @@ List svar_nc1 (
 } // END sv_nc1
 
 
+
+/*______________________function svar_ce1______________________*/
+// [[Rcpp::interfaces(cpp)]]
+// [[Rcpp::export]]
+Rcpp::List svar_ce1 (
+    arma::rowvec&       aux_h_n,            // 1xT
+    double&             aux_rho_n,
+    double&             aux_omega_n,
+    double&             aux_sigma2v_n,
+    double&             aux_sigma2_omega_n, // omega prior hyper-parameter 
+    double&             aux_s_n,             // scale of IG2 prior for aux_sigma2_omega_n
+    arma::urowvec&      aux_S_n,            // 1xT
+    const arma::rowvec& u,                  // 1xT
+    const Rcpp::List&   prior,
+    bool                sample_s_ = true
+) {
+  // sampler for the centred parameterisation of the SV process
+  
+  // fixed values for auxiliary mixture
+  const NumericVector alpha_s = NumericVector::create(1.92677,1.34744,0.73504,0.02266,0-0.85173,-1.97278,-3.46788,-5.55246,-8.68384,-14.65000);
+  const NumericVector sigma_s = NumericVector::create(0.11265,0.17788,0.26768,0.40611,0.62699,0.98583,1.57469,2.54498,4.16591,7.33342);
+  const NumericVector pr_s    = NumericVector::create(0.00609,0.04775,0.13057,0.20674,0.22715,0.18842,0.12047,0.05591,0.01575,0.00115);
+  const double        ccc     = 0.000000001;      // a constant to make log((u+ccc)^2) feasible
+  
+  // sample h and omega of the non-centered SV including ASIS step
+  const int     T = u.n_cols;
+  const rowvec  U = log(pow(u + ccc, 2));
+  
+  const double  prior_sv_a_ = prior["sv_a_"];
+  const double  prior_sv_s_ = prior["sv_s_"];
+  
+  mat           H_rho(T, T, fill::eye);
+  H_rho.diag(-1)       -= aux_rho_n;
+  mat           HH_rho  = H_rho.t() * H_rho;
+  
+  // sample auxiliary mixture states aux_S
+  const vec   mixprob   = find_mixture_indicator_cdf(trans(U - aux_omega_n*aux_h_n));
+  aux_S_n               = trans(inverse_transform_sampling(mixprob, T));
+  
+  rowvec    alpha_S(T);
+  rowvec    sigma_S_inv(T);
+  for (int t=0; t<T; t++) {
+    alpha_S.col(t)      = alpha_s(aux_S_n(t));
+    sigma_S_inv.col(t)  = 1/sigma_s(aux_S_n(t));
+  }
+  
+  // sample aux_s_n
+  if ( sample_s_ ) {
+    aux_s_n               = (1 + 2 * aux_sigma2_omega_n) / chi2rnd(3 + 2 * prior_sv_a_);
+  }
+  
+  // sample aux_sigma2_omega
+  aux_sigma2_omega_n    = randg( distr_param(1 + 0.5 * prior_sv_a_, pow(pow(prior_sv_s_,-1) + pow(2 * aux_sigma2v_n,-1), -1)  ) );
+  
+  // sample aux_rho
+  rowvec    hm1         = aux_h_n.cols(0,T-2);
+  double    aux_rho_var = as_scalar(pow( hm1 * hm1.t() / aux_sigma2v_n, -1));
+  double    aux_rho_mean = as_scalar(aux_rho_var * (hm1 * aux_h_n.cols(1,T-1).t() / aux_sigma2v_n) );
+  aux_rho_n             = RcppTN::rtn1(aux_rho_mean, pow(aux_rho_var, 0.5),-1,1);
+  
+  mat       H_rho_new(T, T, fill::eye);
+  H_rho_new.diag(-1)   -= aux_rho_n;
+  H_rho                 = H_rho_new;
+  HH_rho                = H_rho_new.t() * H_rho_new;
+  
+  // sample aux_sigma2v
+  aux_sigma2v_n         = (aux_sigma2_omega_n + as_scalar(aux_h_n * HH_rho * aux_h_n.t())) / chi2rnd( 3 + T );
+  aux_omega_n           = pow(aux_sigma2v_n, 0.5);
+  
+  // sample aux_h
+  mat       V_h         = diagmat(sigma_S_inv) + (HH_rho / aux_sigma2v_n);
+  vec       h_bar       = diagmat(sigma_S_inv) * (U - alpha_S).t();
+  aux_h_n               = trans(precision_sampler_ar1( V_h.diag(), V_h(1, 0), h_bar));
+  
+  return List::create(
+    _["aux_h_n"]              = aux_h_n,
+    _["aux_rho_n"]            = aux_rho_n,
+    _["aux_omega_n"]          = aux_omega_n,
+    _["aux_sigma2v_n"]        = aux_sigma2v_n,
+    _["aux_sigma2_omega_n"]   = aux_sigma2_omega_n,
+    _["aux_s_n"]              = aux_s_n,
+    _["aux_S_n"]              = aux_S_n
+  );
+} // END svar_ce1

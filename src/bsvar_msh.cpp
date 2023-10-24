@@ -26,6 +26,12 @@ Rcpp::List bsvar_msh_cpp (
     const std::string       name_model = "",// just 3 characters
     const bool              show_progress = true
 ) {
+  
+  std::string oo = "";
+  if ( thin != 1 ) {
+    oo      = ordinal(thin) + " ";
+  }
+  
   // Progress bar setup
   vec prog_rep_points = arma::round(arma::linspace(0, S, 50));
   if (show_progress) {
@@ -35,7 +41,7 @@ Rcpp::List bsvar_msh_cpp (
     Rcout << " Gibbs sampler for the SVAR-" << name_model <<" model             |" << endl;
     Rcout << "**************************************************|" << endl;
     Rcout << " Progress of the MCMC simulation for " << S << " draws" << endl;
-    Rcout << "    Every " << thin << "th draw is saved via MCMC thinning" << endl;
+    Rcout << "    Every " << oo << "draw is saved via MCMC thinning" << endl;
     Rcout << " Press Esc to interrupt the computations" << endl;
     Rcout << "**************************************************|" << endl;
   }
@@ -52,7 +58,7 @@ Rcpp::List bsvar_msh_cpp (
   mat   aux_PR_TR   = as<mat>(starting_values["PR_TR"]);
   vec   aux_pi_0    = as<vec>(starting_values["pi_0"]);
   mat   aux_xi      = as<mat>(starting_values["xi"]);
-  vec   aux_hyper   = as<vec>(starting_values["hyper"]);  // 5x1 (gamma_0, gamma_+, s_0, s_+, s_)
+  mat   aux_hyper   = as<mat>(starting_values["hyper"]);
   
   const int   M     = aux_PR_TR.n_rows;
   
@@ -64,9 +70,13 @@ Rcpp::List bsvar_msh_cpp (
   cube  posterior_PR_TR(M, M, SS);
   mat   posterior_pi_0(M, SS);
   cube  posterior_xi(M, T, SS);
-  mat   posterior_hyper(5, SS);
+  cube  posterior_hyper(2 * N + 1, 2, SS);
+  cube  posterior_sigma(N, T, SS);
   
   int   ss = 0;
+  for (int t=0; t<T; t++) {
+    aux_sigma.col(t)    = pow( aux_sigma2.col(aux_xi.col(t).index_max()) , 0.5 );
+  }
   
   for (int s=0; s<S; s++) {
     
@@ -79,9 +89,6 @@ Rcpp::List bsvar_msh_cpp (
     sample_hyperparameters(aux_hyper, aux_B, aux_A, VB, prior);
     
     // sample aux_B
-    for (int t=0; t<T; t++) {
-      aux_sigma.col(t)    = pow( aux_sigma2.col(aux_xi.col(t).index_max()) , 0.5 );
-    }
     sample_B_heterosk1(aux_B, aux_A, aux_hyper, aux_sigma, Y, X, prior, VB);
     
     // sample aux_A
@@ -96,6 +103,9 @@ Rcpp::List bsvar_msh_cpp (
     
     // sample aux_sigma2
     sample_variances_msh(aux_sigma2, aux_B, aux_A, Y, X, aux_xi, prior);
+    for (int t=0; t<T; t++) {
+      aux_sigma.col(t)    = pow( aux_sigma2.col(aux_xi.col(t).index_max()) , 0.5 );
+    }
     
     if (s % thin == 0) {
       posterior_B.slice(ss)      = aux_B;
@@ -104,7 +114,8 @@ Rcpp::List bsvar_msh_cpp (
       posterior_PR_TR.slice(ss)  = aux_PR_TR;
       posterior_pi_0.col(ss)     = aux_pi_0;
       posterior_xi.slice(ss)     = aux_xi;
-      posterior_hyper.col(ss)    = aux_hyper;
+      posterior_hyper.slice(ss)  = aux_hyper;
+      posterior_sigma.slice(ss)  = aux_sigma;
       ss++;
     }
   } // END s loop
@@ -117,7 +128,8 @@ Rcpp::List bsvar_msh_cpp (
       _["PR_TR"]    = aux_PR_TR,
       _["pi_0"]     = aux_pi_0,
       _["xi"]       = aux_xi,
-      _["hyper"]    = aux_hyper
+      _["hyper"]    = aux_hyper,
+      _["sigma"]    = aux_sigma
     ),
     _["posterior"]  = List::create(
       _["B"]        = posterior_B,
@@ -126,7 +138,8 @@ Rcpp::List bsvar_msh_cpp (
       _["PR_TR"]    = posterior_PR_TR,
       _["pi_0"]     = posterior_pi_0,
       _["xi"]       = posterior_xi,
-      _["hyper"]    = posterior_hyper
+      _["hyper"]    = posterior_hyper,
+      _["sigma"]    = posterior_sigma
     )
   );
 } // END bsvar_msh

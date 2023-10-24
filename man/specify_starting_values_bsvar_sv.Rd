@@ -2,9 +2,9 @@
 % Please edit documentation in R/specify_bsvar_sv.R
 \name{specify_starting_values_bsvar_sv}
 \alias{specify_starting_values_bsvar_sv}
-\title{R6 Class Representing StartingValuesBSVAR-SV}
+\title{R6 Class Representing StartingValuesBSVARSV}
 \description{
-The class StartingValuesBSVAR-SV presents starting values for the bsvar model with Stochastic Volatility heteroskedasticity.
+The class StartingValuesBSVARSV presents starting values for the bsvar model with Stochastic Volatility heteroskedasticity.
 }
 \examples{
 # starting values for a bsvar model for a 3-variable system
@@ -34,7 +34,7 @@ sv$set_starting_values(sv_list)      # providing to the class object
 
 }
 \section{Super class}{
-\code{bsvars::StartingValuesBSVAR} -> \code{StartingValuesBSVAR-SV}
+\code{bsvars::StartingValuesBSVAR} -> \code{StartingValuesBSVARSV}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
@@ -43,13 +43,16 @@ sv$set_starting_values(sv_list)      # providing to the class object
 
 \item{\code{B}}{an \code{NxN} matrix of starting values for the parameter \eqn{B}.}
 
-\item{\code{hyper}}{a \code{5}-vector of starting values for the shrinkage hyper-parameters of the hierarchical prior distribution.}
+\item{\code{hyper}}{a \code{(2*N+1)x2} matrix of starting values for the shrinkage hyper-parameters of the 
+hierarchical prior distribution.}
 
 \item{\code{h}}{an \code{NxT} matrix with the starting values of the log-volatility processes.}
 
 \item{\code{rho}}{an \code{N}-vector with values of SV autoregressive parameters.}
 
 \item{\code{omega}}{an \code{N}-vector with values of SV process conditional standard deviations.}
+
+\item{\code{sigma2v}}{an \code{N}-vector with values of SV process conditional variances.}
 
 \item{\code{S}}{an \code{NxT} integer matrix with the auxiliary mixture component indicators.}
 
@@ -62,17 +65,17 @@ sv$set_starting_values(sv_list)      # providing to the class object
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-StartingValuesBSVAR-SV-new}{\code{specify_starting_values_bsvar_sv$new()}}
-\item \href{#method-StartingValuesBSVAR-SV-get_starting_values}{\code{specify_starting_values_bsvar_sv$get_starting_values()}}
-\item \href{#method-StartingValuesBSVAR-SV-set_starting_values}{\code{specify_starting_values_bsvar_sv$set_starting_values()}}
-\item \href{#method-StartingValuesBSVAR-SV-clone}{\code{specify_starting_values_bsvar_sv$clone()}}
+\item \href{#method-StartingValuesBSVARSV-new}{\code{specify_starting_values_bsvar_sv$new()}}
+\item \href{#method-StartingValuesBSVARSV-get_starting_values}{\code{specify_starting_values_bsvar_sv$get_starting_values()}}
+\item \href{#method-StartingValuesBSVARSV-set_starting_values}{\code{specify_starting_values_bsvar_sv$set_starting_values()}}
+\item \href{#method-StartingValuesBSVARSV-clone}{\code{specify_starting_values_bsvar_sv$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-StartingValuesBSVAR-SV-new"></a>}}
-\if{latex}{\out{\hypertarget{method-StartingValuesBSVAR-SV-new}{}}}
+\if{html}{\out{<a id="method-StartingValuesBSVARSV-new"></a>}}
+\if{latex}{\out{\hypertarget{method-StartingValuesBSVARSV-new}{}}}
 \subsection{Method \code{new()}}{
-Create new starting values StartingValuesBSVAR-SV.
+Create new starting values StartingValuesBSVARSV.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{specify_starting_values_bsvar_sv$new(N, p, T)}\if{html}{\out{</div>}}
 }
@@ -89,14 +92,14 @@ Create new starting values StartingValuesBSVAR-SV.
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-Starting values StartingValuesBSVAR-SV.
+Starting values StartingValuesBSVARSV.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-StartingValuesBSVAR-SV-get_starting_values"></a>}}
-\if{latex}{\out{\hypertarget{method-StartingValuesBSVAR-SV-get_starting_values}{}}}
+\if{html}{\out{<a id="method-StartingValuesBSVARSV-get_starting_values"></a>}}
+\if{latex}{\out{\hypertarget{method-StartingValuesBSVARSV-get_starting_values}{}}}
 \subsection{Method \code{get_starting_values()}}{
-Returns the elements of the starting values StartingValuesBSVAR-SV as a \code{list}.
+Returns the elements of the starting values StartingValuesBSVARSV as a \code{list}.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{specify_starting_values_bsvar_sv$get_starting_values()}\if{html}{\out{</div>}}
 }
@@ -114,8 +117,8 @@ sv$get_starting_values()   # show starting values as list
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-StartingValuesBSVAR-SV-set_starting_values"></a>}}
-\if{latex}{\out{\hypertarget{method-StartingValuesBSVAR-SV-set_starting_values}{}}}
+\if{html}{\out{<a id="method-StartingValuesBSVARSV-set_starting_values"></a>}}
+\if{latex}{\out{\hypertarget{method-StartingValuesBSVARSV-set_starting_values}{}}}
 \subsection{Method \code{set_starting_values()}}{
 Returns the elements of the starting values StartingValuesBSVAR_SV as a \code{list}.
 \subsection{Usage}{
@@ -130,7 +133,7 @@ Returns the elements of the starting values StartingValuesBSVAR_SV as a \code{li
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-An object of class StartingValuesBSVAR including the last draw of the current MCMC as the starting value to be passed to the continuation of the MCMC estimation using \code{bsvar()}.
+An object of class StartingValuesBSVAR including the last draw of the current MCMC as the starting value to be passed to the continuation of the MCMC estimation using \code{estimate()}.
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
@@ -149,8 +152,8 @@ sv$set_starting_values(sv_list)      # providing to the class object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-StartingValuesBSVAR-SV-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-StartingValuesBSVAR-SV-clone}{}}}
+\if{html}{\out{<a id="method-StartingValuesBSVARSV-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-StartingValuesBSVARSV-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

@@ -2,9 +2,9 @@
 % Please edit documentation in R/specify_bsvar_msh.R
 \name{specify_prior_bsvar_msh}
 \alias{specify_prior_bsvar_msh}
-\title{R6 Class Representing PriorBSVAR-MSH}
+\title{R6 Class Representing PriorBSVARMSH}
 \description{
-The class PriorBSVAR-MSH presents a prior specification for the bsvar model with Markov Switching Heteroskedasticity.
+The class PriorBSVARMSH presents a prior specification for the bsvar model with Markov Switching Heteroskedasticity.
 }
 \examples{
 prior = specify_prior_bsvar_msh$new(N = 3, p = 1, M = 2)  # specify the prior
@@ -21,7 +21,7 @@ prior$get_prior() # show the prior as list
 
 }
 \section{Super class}{
-\code{bsvars::PriorBSVAR} -> \code{PriorBSVAR-MSH}
+\code{bsvars::PriorBSVAR} -> \code{PriorBSVARMSH}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
@@ -34,13 +34,29 @@ prior$get_prior() # show the prior as list
 
 \item{\code{B_nu}}{a positive integer greater of equal than \code{N}, a shape parameter of the generalised-normal prior distribution for the structural matrix \eqn{B}.}
 
-\item{\code{hyper_nu}}{a positive scalar, the shape parameter of the inverted-gamma 2 prior distribution for the two overall shrinkage parameters for matrices \eqn{B} and \eqn{A}.}
+\item{\code{hyper_nu_B}}{a positive scalar, the shape parameter of the inverted-gamma 2 prior
+for the overall shrinkage parameter for matrix \eqn{B}.}
 
-\item{\code{hyper_a}}{a positive scalar, the shape parameter of the gamma prior for the two overall shrinkage parameters.}
+\item{\code{hyper_a_B}}{a positive scalar, the shape parameter of the gamma prior
+for the second-level hierarchy for the overall shrinkage parameter for matrix \eqn{B}.}
 
-\item{\code{hyper_V}}{a positive scalar,  the shape parameter of the inverted-gamma 2 for the level 3 hierarchy of shrinkage parameters.}
+\item{\code{hyper_s_BB}}{a positive scalar, the scale parameter of the inverted-gamma 2 prior
+for the third-level of hierarchy for overall shrinkage parameter for matrix \eqn{B}.}
 
-\item{\code{hyper_S}}{a positive scalar,  the scale parameter of the inverted-gamma 2 for the level 3 hierarchy of shrinkage parameters.}
+\item{\code{hyper_nu_BB}}{a positive scalar, the shape parameter of the inverted-gamma 2 prior
+for the third-level of hierarchy for overall shrinkage parameter for matrix \eqn{B}.}
+
+\item{\code{hyper_nu_A}}{a positive scalar, the shape parameter of the inverted-gamma 2 prior 
+for the overall shrinkage parameter for matrix \eqn{A}.}
+
+\item{\code{hyper_a_A}}{a positive scalar, the shape parameter of the gamma prior
+for the second-level hierarchy for the overall shrinkage parameter for matrix \eqn{A}.}
+
+\item{\code{hyper_s_AA}}{a positive scalar, the scale parameter of the inverted-gamma 2 prior
+for the third-level of hierarchy for overall shrinkage parameter for matrix \eqn{A}.}
+
+\item{\code{hyper_nu_AA}}{a positive scalar, the shape parameter of the inverted-gamma 2 prior
+for the third-level of hierarchy for overall shrinkage parameter for matrix \eqn{A}.}
 
 \item{\code{sigma_nu}}{a positive scalar,  the shape parameter of the inverted-gamma 2 for MS state-dependent variances of the structural shocks, \eqn{\sigma^2_{n.s_t}}.}
 
@@ -53,16 +69,16 @@ prior$get_prior() # show the prior as list
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-PriorBSVAR-MSH-new}{\code{specify_prior_bsvar_msh$new()}}
-\item \href{#method-PriorBSVAR-MSH-get_prior}{\code{specify_prior_bsvar_msh$get_prior()}}
-\item \href{#method-PriorBSVAR-MSH-clone}{\code{specify_prior_bsvar_msh$clone()}}
+\item \href{#method-PriorBSVARMSH-new}{\code{specify_prior_bsvar_msh$new()}}
+\item \href{#method-PriorBSVARMSH-get_prior}{\code{specify_prior_bsvar_msh$get_prior()}}
+\item \href{#method-PriorBSVARMSH-clone}{\code{specify_prior_bsvar_msh$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PriorBSVAR-MSH-new"></a>}}
-\if{latex}{\out{\hypertarget{method-PriorBSVAR-MSH-new}{}}}
+\if{html}{\out{<a id="method-PriorBSVARMSH-new"></a>}}
+\if{latex}{\out{\hypertarget{method-PriorBSVARMSH-new}{}}}
 \subsection{Method \code{new()}}{
-Create a new prior specification PriorBSVAR-MSH.
+Create a new prior specification PriorBSVARMSH.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{specify_prior_bsvar_msh$new(N, p, M, stationary = rep(FALSE, N))}\if{html}{\out{</div>}}
 }
@@ -81,14 +97,14 @@ Create a new prior specification PriorBSVAR-MSH.
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-A new prior specification PriorBSVAR-MSH.
+A new prior specification PriorBSVARMSH.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PriorBSVAR-MSH-get_prior"></a>}}
-\if{latex}{\out{\hypertarget{method-PriorBSVAR-MSH-get_prior}{}}}
+\if{html}{\out{<a id="method-PriorBSVARMSH-get_prior"></a>}}
+\if{latex}{\out{\hypertarget{method-PriorBSVARMSH-get_prior}{}}}
 \subsection{Method \code{get_prior()}}{
-Returns the elements of the prior specification PriorBSVAR-MSH as a \code{list}.
+Returns the elements of the prior specification PriorBSVARMSH as a \code{list}.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{specify_prior_bsvar_msh$get_prior()}\if{html}{\out{</div>}}
 }
@@ -106,8 +122,8 @@ prior$get_prior() # show the prior as list
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PriorBSVAR-MSH-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-PriorBSVAR-MSH-clone}{}}}
+\if{html}{\out{<a id="method-PriorBSVARMSH-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-PriorBSVARMSH-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{
