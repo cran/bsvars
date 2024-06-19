@@ -4,32 +4,36 @@
 \alias{forecast}
 \title{Forecasting using Structural Vector Autoregression}
 \usage{
-forecast(posterior, horizon, exogenous_forecast)
+forecast(posterior, horizon = 1, exogenous_forecast, conditional_forecast)
 }
 \arguments{
-\item{posterior}{posterior estimation outcome - an object of either of the classes: 
-PosteriorBSVAR, PosteriorBSVARMSH, PosteriorBSVARMIX, or PosteriorBSVARSV
+\item{posterior}{posterior estimation outcome
 obtained by running the \code{estimate} function.}
 
 \item{horizon}{a positive integer, specifying the forecasting horizon.}
 
-\item{exogenous_forecast}{a matrix of dimension \code{horizon x d} containing 
-forecasted values of the exogenous variables.}
+\item{exogenous_forecast}{forecasted values of the exogenous variables.}
+
+\item{conditional_forecast}{forecasted values for selected variables.}
 }
 \value{
 A list of class \code{Forecasts} containing the
-draws from the predictive density and for heteroskedastic models the draws from the predictive density of 
-structural shocks conditional standard deviations. The output elements include:
+draws from the predictive density and for heteroskedastic models the draws 
+from the predictive density of structural shocks conditional standard 
+deviations and data. The output elements include:
 
 \describe{
  \item{forecasts}{an \code{NxTxS} array with the draws from predictive density}
  \item{forecasts_sigma}{provided only for heteroskedastic models, an \code{NxTxS} array with the draws 
  from the predictive density of structural shocks conditional standard deviations}
+ \item{Y}{an \eqn{NxT} matrix with the data on dependent variables}
 }
 }
 \description{
-Samples from the joint predictive density of all of the dependent variables at forecast horizons 
-from 1 to \code{horizon} specified as an argument of the function.
+Samples from the joint predictive density of all of the dependent 
+variables for models from packages \pkg{bsvars}, \pkg{bsvarSIGNs} or 
+\pkg{bvarPANELs} at forecast horizons from 1 to \code{horizon} specified as 
+an argument of the function.
 }
 \examples{
 # upload data

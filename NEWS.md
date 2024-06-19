@@ -1,3 +1,23 @@
+# bsvars 3.0
+
+The package is under intensive development, and more functionality will be provided soon! To see the package [ROADMAP](https://github.com/bsvars/bsvars/milestones) towards the next version.
+
+Have a question, or suggestion, or wanna get in touch? Join the package [DISCUSSION](https://github.com/bsvars/bsvars/discussions) forum.
+
+1. The package has a logo! And it's beautiful! [#37](https://github.com/bsvars/bsvars/issues/37)
+2. The package includes `summary` methods [#1](https://github.com/bsvars/bsvars/issues/1)
+3. The package includes `plot` methods [#36](https://github.com/bsvars/bsvars/issues/36)
+4. Method `forecast` allow for conditional forecasting given provided future trajectories of selected variables [#76](https://github.com/bsvars/bsvars/issues/76)
+5. Sparse mixture and Markov-switching models can now have more than 20 regimes [#57](https://github.com/bsvars/bsvars/issues/57)
+6. A new, more detailed, package description [#62](https://github.com/bsvars/bsvars/issues/62)
+7. The website features the new logo. And includes some new information [#38](https://github.com/bsvars/bsvars/issues/38)
+8. Updates on documentation to accommodate the fact that some generics and functions from package **bsvars** will be used in a broader family of packages, first of which is [**bsvarSIGNs**](https://github.com/bsvars/bsvarSIGNs). Includes updates on references. [#63](https://github.com/bsvars/bsvars/issues/63)
+9. Fixed `compute_fitted_values()`. Now it's correctly sampling from the predictive data density. [#67](https://github.com/bsvars/bsvars/issues/67)
+10. Fixed some bugs that did not create problems [#55](https://github.com/bsvars/bsvars/issues/55)
+11. Got rid of filling by reference in the samplers for the sake of granting the exported **cpp** functions usability [#56](https://github.com/bsvars/bsvars/issues/56)
+12. Coded `compute_*()` functions as generics and methods [#70](https://github.com/bsvars/bsvars/issues/70)
+13. Updated code for forecast error variance decompositions for heteroskedastic models (qas prompted by [@adamwang15](https://github.com/adamwang15)) [#69](https://github.com/bsvars/bsvars/issues/69)
+
 # bsvars 2.1.0
 
 Published on 11 December 2023
@@ -8,10 +28,6 @@ Published on 11 December 2023
 4. Updated the data as in Lütkepohl, Shang, Uzeda, Woźniak (2023) [#45](https://github.com/bsvars/bsvars/issues/45)
 5. Fixing the compilation problems reported [HERE](https://cran.r-project.org/web/checks/check_results_bsvars.html) [#48](https://github.com/bsvars/bsvars/issues/48)
 6. The package has its pkgdown website at [bsvars.github.io/bsvars/](https://bsvars.github.io/bsvars/) [#38](https://github.com/bsvars/bsvars/issues/38)
-
-The package is under intensive development, and more functionality will be provided soon! To see the package [ROADMAP](https://github.com/bsvars/bsvars/milestone/3) towards the next version 2.1.0.
-
-Have a question, or suggestion, or wanna get in touch? Join the package [DISCUSSION](https://github.com/bsvars/bsvars/discussions) forum.
 
 # bsvars 2.0.0
 

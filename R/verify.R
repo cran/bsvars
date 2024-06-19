@@ -15,7 +15,7 @@
 #' 
 #' @param posterior the \code{posterior} element of the list from the estimation outcome
 #' 
-#' @return An object of class SDDR that is a list of three components:
+#' @return An object of class \code{SDDRvolatility} that is a list of three components:
 #' 
 #' \code{logSDDR} an \code{N}-vector with values of the logarithm of the Bayes factors for 
 #' the homoskedasticity hypothesis for each of the shocks
@@ -35,9 +35,9 @@
 #' @author Tomasz Woźniak \email{wozniak.tom@pm.me}
 #' 
 #' @references 
-#' Lütkepohl, H., and Woźniak, T., (2020) Bayesian Inference for Structural Vector Autoregressions Identified by Markov-Switching Heteroskedasticity. \emph{Journal of Economic Dynamics and Control} \bold{113}, 103862, \doi{https://doi.org/10.1016/j.jedc.2020.103862}.
+#' Lütkepohl, H., and Woźniak, T., (2020) Bayesian Inference for Structural Vector Autoregressions Identified by Markov-Switching Heteroskedasticity. \emph{Journal of Economic Dynamics and Control} \bold{113}, 103862, \doi{10.1016/j.jedc.2020.103862}.
 #' 
-#' Lütkepohl, H., Shang, F., Uzeda, L., and Woźniak, T., (2023) Partial Identification of Heteroskedastic Structural VARs: Theory and Bayesian Inference.
+#' Lütkepohl, H., Shang, F., Uzeda, L., and Woźniak, T. (2024) Partial Identification of Heteroskedastic Structural VARs: Theory and Bayesian Inference. \emph{University of Melbourne Working Paper}, 1--57, \doi{10.48550/arXiv.2404.11057}.
 #' 
 #' @examples
 #' # simple workflow
@@ -93,7 +93,7 @@ verify_volatility <- function(posterior) {
 #' set.seed(123)
 #' 
 #' # estimate the model
-#' posterior      = estimate(specification, 5, thin = 1)
+#' posterior      = estimate(specification, 10, thin = 1)
 #' 
 #' # verify heteroskedasticity
 #' sddr           = verify_volatility(posterior)
@@ -103,7 +103,7 @@ verify_volatility <- function(posterior) {
 #' set.seed(123)
 #' us_fiscal_lsuw |>
 #'   specify_bsvar$new(p = 1) |>
-#'   estimate(S = 5, thin = 1) |> 
+#'   estimate(S = 10, thin = 1) |> 
 #'   verify_volatility() -> sddr
 #'   
 #' @export
@@ -174,7 +174,7 @@ verify_volatility.PosteriorBSVARSV <- function(posterior) {
     # estimate the SDDR
     sddr            = .Call(`_bsvars_verify_volatility_sv_cpp`, just_posterior, prior, Y, X, TRUE)
     
-    class(sddr)     = "SDDR"
+    class(sddr)     = "SDDRvolatility"
     return(sddr)
   }
 }
@@ -236,7 +236,7 @@ verify_volatility.PosteriorBSVARMIX <- function(posterior) {
   # estimate the SDDR
   sddr            = .Call(`_bsvars_verify_volatility_msh_cpp`, just_posterior, prior, Y, X)
   
-  class(sddr)     = "SDDR"
+  class(sddr)     = "SDDRvolatility"
   return(sddr)
 }
 
@@ -298,7 +298,7 @@ verify_volatility.PosteriorBSVARMSH <- function(posterior) {
   # estimate the SDDR
   sddr            = .Call(`_bsvars_verify_volatility_msh_cpp`, just_posterior, prior, Y, X)
   
-  class(sddr)     = "SDDR"
+  class(sddr)     = "SDDRvolatility"
   return(sddr)
 }
 
@@ -328,7 +328,7 @@ verify_volatility.PosteriorBSVARMSH <- function(posterior) {
 #' in which case the values represent the joint hypothesis, and missing value \code{NA} 
 #' for these parameters that are not tested
 #' 
-#' @return An object of class SDDR that is a list of three components:
+#' @return An object of class \code{SDDRautoregression} that is a list of three components:
 #' 
 #' \code{logSDDR} a scalar with values of the logarithm of the Bayes factors for 
 #' the autoregressive hypothesis for each of the shocks
@@ -349,7 +349,7 @@ verify_volatility.PosteriorBSVARMSH <- function(posterior) {
 #' @author Tomasz Woźniak \email{wozniak.tom@pm.me}
 #' 
 #' @references 
-#' Woźniak, T., and Droumaguet, M., (2022) Bayesian Assessment of Identifying Restrictions for Heteroskedastic Structural VARs
+#' Woźniak, T., and Droumaguet, M., (2024) Bayesian Assessment of Identifying Restrictions for Heteroskedastic Structural VARs
 #' 
 #' @examples
 #' # simple workflow
@@ -408,7 +408,7 @@ verify_autoregression.PosteriorBSVAR <- function(posterior, hypothesis) {
   # estimate the SDDR
   sddr            = .Call(`_bsvars_verify_autoregressive_homosk_cpp`, hypothesis_cpp, just_posterior, prior, Y, X)
   
-  class(sddr)     = "SDDR"
+  class(sddr)     = "SDDRautoregression"
   return(sddr)
 }
 
@@ -458,7 +458,7 @@ verify_autoregression.PosteriorBSVARSV <- function(posterior, hypothesis) {
   # estimate the SDDR
   sddr            = .Call(`_bsvars_verify_autoregressive_heterosk_cpp`, hypothesis_cpp, just_posterior, prior, Y, X)
   
-  class(sddr)     = "SDDR"
+  class(sddr)     = "SDDRautoregression"
   return(sddr)
 }
 
@@ -508,7 +508,7 @@ verify_autoregression.PosteriorBSVARMIX <- function(posterior, hypothesis) {
   # estimate the SDDR
   sddr            = .Call(`_bsvars_verify_autoregressive_heterosk_cpp`, hypothesis_cpp, just_posterior, prior, Y, X)
   
-  class(sddr)     = "SDDR"
+  class(sddr)     = "SDDRautoregression"
   return(sddr)
 }
 
@@ -558,6 +558,6 @@ verify_autoregression.PosteriorBSVARMSH <- function(posterior, hypothesis) {
   # estimate the SDDR
   sddr            = .Call(`_bsvars_verify_autoregressive_heterosk_cpp`, hypothesis_cpp, just_posterior, prior, Y, X)
   
-  class(sddr)     = "SDDR"
+  class(sddr)     = "SDDRautoregression"
   return(sddr)
 }

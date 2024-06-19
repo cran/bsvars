@@ -4,31 +4,45 @@
 \alias{forecast.PosteriorBSVARMSH}
 \title{Forecasting using Structural Vector Autoregression}
 \usage{
-\method{forecast}{PosteriorBSVARMSH}(posterior, horizon, exogenous_forecast = NULL)
+\method{forecast}{PosteriorBSVARMSH}(
+  posterior,
+  horizon = 1,
+  exogenous_forecast = NULL,
+  conditional_forecast = NULL
+)
 }
 \arguments{
 \item{posterior}{posterior estimation outcome - an object of class 
-PosteriorBSVARMSH obtained by running the \code{estimate} function.}
+\code{PosteriorBSVARMSH} obtained by running the \code{estimate} function.}
 
 \item{horizon}{a positive integer, specifying the forecasting horizon.}
 
 \item{exogenous_forecast}{a matrix of dimension \code{horizon x d} containing 
 forecasted values of the exogenous variables.}
+
+\item{conditional_forecast}{a \code{horizon x N} matrix with forecasted values 
+for selected variables. It should only contain \code{numeric} or \code{NA} 
+values. The entries with \code{NA} values correspond to the values that are 
+forecasted conditionally on the realisations provided as \code{numeric} values.}
 }
 \value{
 A list of class \code{Forecasts} containing the
-draws from the predictive density and for heteroskedastic models the draws from the predictive density of 
-structural shocks conditional standard deviations. The output elements include:
+draws from the predictive density and for heteroskedastic models the draws 
+from the predictive density of structural shocks conditional standard 
+deviations and data. The output elements include:
 
 \describe{
  \item{forecasts}{an \code{NxTxS} array with the draws from predictive density}
  \item{forecasts_sigma}{provided only for heteroskedastic models, an \code{NxTxS} array with the draws 
  from the predictive density of structural shocks conditional standard deviations}
+ \item{Y}{an \eqn{NxT} matrix with the data on dependent variables}
 }
 }
 \description{
-Samples from the joint predictive density of all of the dependent variables at forecast horizons 
-from 1 to \code{horizon} specified as an argument of the function.
+Samples from the joint predictive density of all of the dependent 
+variables for models from packages \pkg{bsvars}, \pkg{bsvarSIGNs} or 
+\pkg{bvarPANELs} at forecast horizons from 1 to \code{horizon} specified as 
+an argument of the function.
 }
 \examples{
 # upload data
@@ -55,6 +69,22 @@ us_fiscal_lsuw |>
   estimate(S = 10) |> 
   estimate(S = 20) |> 
   forecast(horizon = 4) -> predictive
+  
+# conditional forecasting 2 quarters ahead conditioning on 
+#  provided future values for the Gross Domestic Product 
+############################################################
+cf        = matrix(NA , 2, 3)
+cf[,3]    = tail(us_fiscal_lsuw, 1)[3]   # conditional forecasts equal to the last gdp observation
+predictive    = forecast(posterior, 2, conditional_forecast = cf)
+
+# workflow with the pipe |>
+############################################################
+set.seed(123)
+us_fiscal_lsuw |>
+  specify_bsvar_msh$new(p = 1, M = 2) |>
+  estimate(S = 10) |> 
+  estimate(S = 20) |> 
+  forecast(horizon = 2, conditional_forecast = cf) -> predictive
   
 }
 \author{

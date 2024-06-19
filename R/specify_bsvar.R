@@ -346,7 +346,7 @@ specify_data_matrices = R6::R6Class(
         Td = nrow(exogenous)
         test_exogenous = 0
         for (i in 1:d) {
-          test_exogenous = test_exogenous + prod(exogenous[,i]/mean(exogenous[,i]) == rep(1,Td))
+          test_exogenous = test_exogenous + prod(exogenous[,i] - mean(exogenous[,i]) == rep(0,Td))
         }
         stopifnot("Argument exogenous cannot include a constant term." = test_exogenous == 0 )
       }
@@ -360,7 +360,7 @@ specify_data_matrices = R6::R6Class(
         X           = cbind(X, data[(p + 1):TT - i,])
       }
       X             = cbind(X, rep(1, T))
-      if (!is.null(data)) {
+      if (!is.null(exogenous)) {
         X           = cbind(X, exogenous[(p + 1):TT,])
       }
       self$X        = t(X)
