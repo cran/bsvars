@@ -1,8 +1,14 @@
-# bsvars 3.0
+# bsvars 3.0.1
 
 The package is under intensive development, and more functionality will be provided soon! To see the package [ROADMAP](https://github.com/bsvars/bsvars/milestones) towards the next version.
 
 Have a question, or suggestion, or wanna get in touch? Join the package [DISCUSSION](https://github.com/bsvars/bsvars/discussions) forum.
+
+1. Fixed the bugs that started coming up in the new tested version of **Armadillo** and **RcppArmadillo** [#82](https://github.com/bsvars/bsvars/issues/82) and [RcppCore/RcppArmadillo#443](https://github.com/RcppCore/RcppArmadillo/issues/443)
+2. Corrected the computations of `verify_autoregression` [#82](https://github.com/bsvars/bsvars/issues/82)
+
+
+# bsvars 3.0
 
 1. The package has a logo! And it's beautiful! [#37](https://github.com/bsvars/bsvars/issues/37)
 2. The package includes `summary` methods [#1](https://github.com/bsvars/bsvars/issues/1)
