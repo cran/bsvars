@@ -1,8 +1,15 @@
-# bsvars 3.0.1
+# bsvars 3.1
 
 The package is under intensive development, and more functionality will be provided soon! To see the package [ROADMAP](https://github.com/bsvars/bsvars/milestones) towards the next version.
 
 Have a question, or suggestion, or wanna get in touch? Join the package [DISCUSSION](https://github.com/bsvars/bsvars/discussions) forum.
+
+1. A NEW MODEL! An SVAR with t-distributed structural shocks facilitating identification through non-normality is now included in the package with all the necessary functionality [#84](https://github.com/bsvars/bsvars/issues/84)
+2. New ways of verifying identification through heteroskedasticity or non-normality using method `verify_identification()` [#84](https://github.com/bsvars/bsvars/issues/84)
+3. Improve coding of `forecast` **cpp** function and **R** methods [#89](https://github.com/bsvars/bsvars/issues/89)
+4. Included or updated legend in FEVD and HD plots as requested by [@ccoleman9](https://github.com/ccoleman9) [#85](https://github.com/bsvars/bsvars/issues/85)
+
+# bsvars 3.0.1
 
 1. Fixed the bugs that started coming up in the new tested version of **Armadillo** and **RcppArmadillo** [#82](https://github.com/bsvars/bsvars/issues/82) and [RcppCore/RcppArmadillo#443](https://github.com/RcppCore/RcppArmadillo/issues/443)
 2. Corrected the computations of `verify_autoregression` [#82](https://github.com/bsvars/bsvars/issues/82)
