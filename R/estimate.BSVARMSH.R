@@ -22,7 +22,10 @@
 #' where \eqn{U} is an \code{NxT} matrix of structural form error terms, and
 #' \eqn{B} is an \code{NxN} matrix of contemporaneous relationships.
 #' 
-#' Finally, the structural shocks, \eqn{U}, are temporally and contemporaneously independent and jointly normally distributed with zero mean.
+#' Finally, the structural shocks, \eqn{U}, are temporally and contemporaneously 
+#' independent and jointly distributed with zero mean.
+#' The structural shocks can be either normally or Student-t distributed, where in 
+#' the latter case the shock-specific degrees of freedom parameters are estimated.
 #' The conditional variance of the \code{n}th shock at time \code{t} is given by:
 #' \deqn{Var_{t-1}[u_{n.t}] = s^2_{n.s_t}}
 #' where \eqn{s_t} is a Markov process driving the time-variability of 
@@ -59,7 +62,7 @@
 #' 
 #' \code{last_draw} an object of class BSVARMSH with the last draw of the current MCMC run as the starting value to be passed to the continuation of the MCMC estimation using \code{estimate()}. 
 #' 
-#' @seealso \code{\link{specify_bsvar_msh}}, \code{\link{specify_posterior_bsvar_msh}}, \code{\link{normalise_posterior}}
+#' @seealso \code{\link{specify_bsvar_msh}}, \code{\link{specify_posterior_bsvar_msh}}, \code{\link{normalise}}
 #'
 #' @author Tomasz Woźniak \email{wozniak.tom@pm.me}
 #' 
@@ -80,27 +83,16 @@
 #' @examples
 #' # simple workflow
 #' ############################################################
-#' # upload data
-#' data(us_fiscal_lsuw)
-#' 
-#' # specify the model and set seed
-#' specification  = specify_bsvar_msh$new(us_fiscal_lsuw, p = 1, M = 2)
-#' set.seed(123)
-#' 
-#' # run the burn-in
+#' specification  = specify_bsvar_msh$new(us_fiscal_lsuw, M = 2)
 #' burn_in        = estimate(specification, 5)
-#' 
-#' # estimate the model
-#' posterior      = estimate(burn_in, 10, thin = 2)
+#' posterior      = estimate(burn_in, 5)
 #' 
 #' # workflow with the pipe |>
 #' ############################################################
-#' set.seed(123)
 #' us_fiscal_lsuw |>
-#'   specify_bsvar_msh$new(p = 1, M = 2) |>
+#'   specify_bsvar_msh$new(M = 2) |>
 #'   estimate(S = 5) |> 
-#'   estimate(S = 10, thin = 2) |> 
-#'   compute_impulse_responses(horizon = 4) -> irf
+#'   estimate(S = 5) -> post
 #' 
 #' @export
 estimate.BSVARMSH <- function(specification, S, thin = 1, show_progress = TRUE) {
@@ -108,7 +100,8 @@ estimate.BSVARMSH <- function(specification, S, thin = 1, show_progress = TRUE) 
   # get the inputs to estimation
   prior               = specification$prior$get_prior()
   starting_values     = specification$starting_values$get_starting_values()
-  VB                  = specification$identification$get_identification()
+  VB                  = specification$identification$VB
+  VA                  = specification$identification$VA
   data_matrices       = specification$data_matrices$get_data_matrices()
   finiteM             = specification$finiteM
   if (finiteM) {
@@ -116,17 +109,16 @@ estimate.BSVARMSH <- function(specification, S, thin = 1, show_progress = TRUE) 
   } else {
     model             = "sparseMSH"
   }
+  normal              = specification$get_normal()
   
   # estimation
-  qqq                 = .Call(`_bsvars_bsvar_msh_cpp`, S, data_matrices$Y, data_matrices$X, prior, VB, starting_values, thin, finiteM, TRUE, model, show_progress)
+  qqq                 = .Call(`_bsvars_bsvar_msh_cpp`, S, data_matrices$Y, data_matrices$X, prior, VB, VA, starting_values, normal, thin, finiteM, TRUE, model, show_progress)
   
   specification$starting_values$set_starting_values(qqq$last_draw)
   output              = specify_posterior_bsvar_msh$new(specification, qqq$posterior)
   
   # normalise output
-  BB                  = qqq$last_draw$B
-  BB                  = diag(sign(diag(BB))) %*% BB
-  normalise_posterior(output, BB)
+  output              = normalise(output)
   
   return(output)
 }
@@ -145,27 +137,16 @@ estimate.BSVARMSH <- function(specification, S, thin = 1, show_progress = TRUE) 
 #' @examples
 #' # simple workflow
 #' ############################################################
-#' # upload data
-#' data(us_fiscal_lsuw)
-#' 
-#' # specify the model and set seed
-#' specification  = specify_bsvar_msh$new(us_fiscal_lsuw, p = 1, M = 2)
-#' set.seed(123)
-#' 
-#' # run the burn-in
+#' specification  = specify_bsvar_msh$new(us_fiscal_lsuw, M = 2)
 #' burn_in        = estimate(specification, 5)
-#' 
-#' # estimate the model
-#' posterior      = estimate(burn_in, 10, thin = 2)
+#' posterior      = estimate(burn_in, 5)
 #' 
 #' # workflow with the pipe |>
 #' ############################################################
-#' set.seed(123)
 #' us_fiscal_lsuw |>
-#'   specify_bsvar_msh$new(p = 1, M = 2) |>
+#'   specify_bsvar_msh$new(M = 2) |>
 #'   estimate(S = 5) |> 
-#'   estimate(S = 10, thin = 2) |> 
-#'   compute_impulse_responses(horizon = 4) -> irf
+#'   estimate(S = 5) -> post
 #' 
 #' @export
 estimate.PosteriorBSVARMSH <- function(specification, S, thin = 1, show_progress = TRUE) {
@@ -173,7 +154,8 @@ estimate.PosteriorBSVARMSH <- function(specification, S, thin = 1, show_progress
   # get the inputs to estimation
   prior               = specification$last_draw$prior$get_prior()
   starting_values     = specification$last_draw$starting_values$get_starting_values()
-  VB                  = specification$last_draw$identification$get_identification()
+  VB                  = specification$last_draw$identification$VB
+  VA                  = specification$last_draw$identification$VA
   data_matrices       = specification$last_draw$data_matrices$get_data_matrices()
   finiteM             = specification$last_draw$finiteM
   if (finiteM) {
@@ -181,17 +163,16 @@ estimate.PosteriorBSVARMSH <- function(specification, S, thin = 1, show_progress
   } else {
     model             = "sparseMSH"
   }
+  normal              = specification$last_draw$get_normal()
   
   # estimation
-  qqq                 = .Call(`_bsvars_bsvar_msh_cpp`, S, data_matrices$Y, data_matrices$X, prior, VB, starting_values, thin, finiteM, TRUE, model, show_progress)
+  qqq                 = .Call(`_bsvars_bsvar_msh_cpp`, S, data_matrices$Y, data_matrices$X, prior, VB, VA, starting_values, normal, thin, finiteM, TRUE, model, show_progress)
   
   specification$last_draw$starting_values$set_starting_values(qqq$last_draw)
   output              = specify_posterior_bsvar_msh$new(specification$last_draw, qqq$posterior)
   
   # normalise output
-  BB                  = qqq$last_draw$B
-  BB                  = diag(sign(diag(BB))) %*% BB
-  normalise_posterior(output, BB)
+  output              = normalise(output)
   
   return(output)
 }

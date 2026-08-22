@@ -18,6 +18,7 @@ Rcpp::List bsvar_t_cpp(
   const arma::mat&  Y,                  // NxT dependent variables
   const arma::mat&  X,                  // KxT dependent variables
   const arma::field<arma::mat>& VB,     // N-list
+  const arma::field<arma::mat>& VA,     // N-list
   const Rcpp::List& prior,              // a list of priors
   const Rcpp::List& starting_values,    // a list of starting values
   const arma::vec&  adptive_alpha_gamma,// a 2x1 vector of adaptive MH tuning parameters: target acceptance and discounting factor
@@ -53,23 +54,29 @@ Rcpp::List bsvar_t_cpp(
   mat     aux_B       = as<mat>(starting_values["B"]);
   mat     aux_A       = as<mat>(starting_values["A"]);
   mat     aux_hyper   = as<mat>(starting_values["hyper"]);
-  vec     aux_lambda  = as<vec>(starting_values["lambda"]);
-  double  aux_df      = as<double>(starting_values["df"]);
+  mat     aux_lambda  = as<mat>(starting_values["lambda"]);
+  vec     aux_df      = as<vec>(starting_values["df"]);
   
   const int   SS    = floor(S / thin);
   
   cube  posterior_B(N, N, SS);
   cube  posterior_A(N, K, SS);
   cube  posterior_hyper(2 * N + 1, 2, SS);
-  mat   posterior_lambda(T, SS);
-  vec   posterior_df(SS);
+  cube  posterior_lambda(N, T, SS);
+  mat   posterior_df(N, SS);
   mat   tmp_lambda_sqrt(N, T);
   
   int   ss = 0;
   
-  // the initial value for the adaptive_scale is set to the negative inverse of 
-  // Hessian for the posterior log_kenel for df evaluated at df = 30
-  double adaptive_scale = pow(0.25 * T * R::psigamma(15, 1) - T * pow(17, -2) - 2 * pow(16, -2), -1);
+  // the initial proposal variance is the inverse negative Hessian of the
+  // posterior log-kernel for df evaluated at df = 30
+  const double df_reference = 30;
+  const double negative_hessian =
+    0.25 * T * R::psigamma(0.5 * df_reference, 1) -
+    0.5 * T * (df_reference - 4) * std::pow(df_reference - 2, -2) -
+    2 * std::pow(df_reference - 1, -2);
+  double  adaptive_scale_init = 1 / std::sqrt(negative_hessian);
+  vec     adaptive_scale(N, fill::value(adaptive_scale_init));
   
   for (int s=0; s<S; s++) {
   
@@ -78,23 +85,36 @@ Rcpp::List bsvar_t_cpp(
     // Check for user interrupts
     if (s % 200 == 0) checkUserInterrupt();
     
-    vec df_tmp      = sample_df ( aux_df, adaptive_scale, aux_lambda, s, adptive_alpha_gamma );
-    aux_df          = df_tmp(0); 
-    adaptive_scale  = df_tmp(1);
+    try {
+      List df_tmp      = sample_df ( aux_df, adaptive_scale, aux_lambda, s, adptive_alpha_gamma );
+      aux_df          = as<vec>(df_tmp["aux_df"]);
+      adaptive_scale  = as<vec>(df_tmp["adaptive_scale"]);
+    } catch (std::runtime_error &e) {}
     
-    aux_lambda      = sample_lambda ( aux_df, aux_B, aux_A, Y, X );
-    tmp_lambda_sqrt.each_row() = sqrt(aux_lambda.t());
+    mat U           = aux_B * (Y - aux_A * X);
+    try {
+      aux_lambda      = sample_lambda ( aux_df, U );
+      tmp_lambda_sqrt = sqrt(aux_lambda);
+    } catch (std::runtime_error &e) {}
     
-    aux_hyper       = sample_hyperparameters(aux_hyper, aux_B, aux_A, VB, prior);
-    aux_A           = sample_A_heterosk1 ( aux_A, aux_B, aux_hyper, tmp_lambda_sqrt, Y, X, prior);
-    aux_B           = sample_B_heterosk1 ( aux_B, aux_A, aux_hyper, tmp_lambda_sqrt, Y, X, prior, VB );
+    try {
+      aux_hyper       = sample_hyperparameters(aux_hyper, aux_B, aux_A, VB, VA, prior);
+    } catch (std::runtime_error &e) {}
+    
+    try {
+      aux_A           = sample_A_heterosk1 ( aux_A, aux_B, aux_hyper, tmp_lambda_sqrt, Y, X, prior, VA );
+    } catch (std::runtime_error &e) {}
+    
+    try {
+      aux_B           = sample_B_heterosk1 ( aux_B, aux_A, aux_hyper, tmp_lambda_sqrt, Y, X, prior, VB );
+    } catch (std::runtime_error &e) {}
     
     if (s % thin == 0) {
-      posterior_B.slice(ss)     = aux_B;
-      posterior_A.slice(ss)     = aux_A;
-      posterior_hyper.slice(ss) = aux_hyper;
-      posterior_lambda.col(ss)  = aux_lambda;
-      posterior_df(ss)          = aux_df;
+      posterior_B.slice(ss)       = aux_B;
+      posterior_A.slice(ss)       = aux_A;
+      posterior_hyper.slice(ss)   = aux_hyper;
+      posterior_lambda.slice(ss)  = aux_lambda;
+      posterior_df.col(ss)        = aux_df;
       ss++;
     }
   } // END s loop

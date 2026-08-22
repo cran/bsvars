@@ -7,6 +7,7 @@
 \method{plot}{PosteriorShocks}(
   x,
   probability = 0.9,
+  shock_names,
   col = "#ff69b4",
   main,
   xlab,
@@ -24,6 +25,8 @@ structural shocks.}
 interval stretches from the \code{0.5 * (1 - probability)} to 
 \code{1 - 0.5 * (1 - probability)} percentile of the posterior distribution.}
 
+\item{shock_names}{a vector of length \code{N} containing names of the structural shocks.}
+
 \item{col}{a colour of the plot line and the ribbon}
 
 \item{main}{an alternative main title for the plot}
@@ -40,11 +43,9 @@ interval stretches from the \code{0.5 * (1 - probability)} to
 Plots of structural shocks including their median and percentiles.
 }
 \examples{
-data(us_fiscal_lsuw)                                  # upload data
-set.seed(123)                                         # set seed
 specification  = specify_bsvar$new(us_fiscal_lsuw)    # specify model
-burn_in        = estimate(specification, 10)          # run the burn-in
-posterior      = estimate(burn_in, 20, thin = 1)      # estimate the model
+burn_in        = estimate(specification, 5)           # run the burn-in
+posterior      = estimate(burn_in, 5)                 # estimate the model
 
 # compute structural shocks
 shocks         = compute_structural_shocks(posterior)
@@ -52,11 +53,10 @@ plot(shocks)                                          # plot
 
 # workflow with the pipe |>
 ############################################################
-set.seed(123)
 us_fiscal_lsuw |>
   specify_bsvar$new() |>
-  estimate(S = 10) |> 
-  estimate(S = 20, thin = 1) |> 
+  estimate(S = 5) |> 
+  estimate(S = 5) |> 
   compute_structural_shocks() |>
   plot()
 

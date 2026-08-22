@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "sample_ABhyper.h"
 #include "msh.h"
+#include "sample_t.h"
 
 using namespace Rcpp;
 using namespace arma;
@@ -19,7 +20,9 @@ Rcpp::List bsvar_msh_cpp (
     const arma::mat&        X,              // KxT explanatory variables
     const Rcpp::List&       prior,          // a list of priors - original dimensions
     const arma::field<arma::mat>& VB,       // restrictions on B0
+    const arma::field<arma::mat>& VA,       // N-list
     const Rcpp::List&       starting_values,
+    const bool              normal = true,
     const int               thin = 100,     // introduce thinning
     const bool              finiteM = true,
     const bool              MSnotMIX = true,
@@ -47,6 +50,8 @@ Rcpp::List bsvar_msh_cpp (
   }
   Progress p(50, show_progress);
   
+  const vec adptive_alpha_gamma = as<vec>(NumericVector::create(0.44, 0.6));
+  
   const int   T     = Y.n_cols;
   const int   N     = Y.n_rows;
   const int   K     = X.n_rows;
@@ -59,6 +64,11 @@ Rcpp::List bsvar_msh_cpp (
   vec   aux_pi_0    = as<vec>(starting_values["pi_0"]);
   mat   aux_xi      = as<mat>(starting_values["xi"]);
   mat   aux_hyper   = as<mat>(starting_values["hyper"]);
+  mat   aux_lambda  = as<mat>(starting_values["lambda"]);
+  mat   aux_lambda_sqrt(N, T, fill::ones);
+  mat   aux_hetero(N, T, fill::ones);
+  vec   aux_df      = as<vec>(starting_values["df"]);
+  mat   U;
   
   const int   M     = aux_PR_TR.n_rows;
   
@@ -72,11 +82,25 @@ Rcpp::List bsvar_msh_cpp (
   cube  posterior_xi(M, T, SS);
   cube  posterior_hyper(2 * N + 1, 2, SS);
   cube  posterior_sigma(N, T, SS);
+  cube  posterior_lambda(N, T, SS);
+  mat   posterior_df(N, SS);
   
   int   ss = 0;
   for (int t=0; t<T; t++) {
     aux_sigma.col(t)    = pow( aux_sigma2.col(aux_xi.col(t).index_max()) , 0.5 );
   }
+  
+  aux_hetero = aux_sigma % aux_lambda_sqrt;
+  
+  // the initial proposal variance is the inverse negative Hessian of the
+  // posterior log-kernel for df evaluated at df = 30
+  const double df_reference = 30;
+  const double negative_hessian =
+    0.25 * T * R::psigamma(0.5 * df_reference, 1) -
+    0.5 * T * (df_reference - 4) * std::pow(df_reference - 2, -2) -
+    2 * std::pow(df_reference - 1, -2);
+  double  adaptive_scale_init = 1 / std::sqrt(negative_hessian);
+  vec     adaptive_scale(N, fill::value(adaptive_scale_init));
   
   for (int s=0; s<S; s++) {
     
@@ -85,29 +109,60 @@ Rcpp::List bsvar_msh_cpp (
     // Check for user interrupts
     if (s % 200 == 0) checkUserInterrupt();
     
-    // sample aux_hyper
-    aux_hyper         = sample_hyperparameters(aux_hyper, aux_B, aux_A, VB, prior);
-    
-    // sample aux_B
-    aux_B             = sample_B_heterosk1(aux_B, aux_A, aux_hyper, aux_sigma, Y, X, prior, VB);
-    
-    // sample aux_A
-    aux_A             = sample_A_heterosk1(aux_A, aux_B, aux_hyper, aux_sigma, Y, X, prior);
+    if ( !normal ) {
+      try {
+        List df_tmp     = sample_df ( aux_df, adaptive_scale, aux_lambda, s, adptive_alpha_gamma );
+        aux_df          = as<vec>(df_tmp["aux_df"]);
+        adaptive_scale  = as<vec>(df_tmp["adaptive_scale"]);
+      } catch (std::runtime_error &e) {}
       
+      U               = aux_B * (Y - aux_A * X) / aux_sigma;
+      try {
+        aux_lambda      = sample_lambda ( aux_df, U );
+        aux_lambda_sqrt = sqrt(aux_lambda);
+        aux_hetero      = aux_sigma % aux_lambda_sqrt;
+      } catch (std::runtime_error &e) {}
+    }
+    
     // sample aux_xi
-    mat U = aux_B * (Y - aux_A * X);
-    aux_xi            = sample_Markov_process_msh(aux_xi, U, aux_sigma2, aux_PR_TR, aux_pi_0, finiteM);
+    U                 = aux_B * (Y - aux_A * X) / aux_lambda_sqrt;
+    try {
+      aux_xi            = sample_Markov_process_msh(aux_xi, U, aux_sigma2, aux_PR_TR, aux_pi_0, finiteM);
+    } catch (std::runtime_error &e) {}
     
     // sample aux_PR_TR
-    List aux_PR_tmp   = sample_transition_probabilities(aux_PR_TR, aux_pi_0, aux_xi, prior, MSnotMIX);
-    aux_PR_TR         = as<mat>(aux_PR_tmp["PR_TR"]);
-    aux_pi_0          = as<vec>(aux_PR_tmp["pi_0"]);
+    try {
+      List aux_PR_tmp   = sample_transition_probabilities(aux_PR_TR, aux_pi_0, aux_xi, prior, MSnotMIX);
+      aux_PR_TR         = as<mat>(aux_PR_tmp["PR_TR"]);
+      aux_pi_0          = as<vec>(aux_PR_tmp["pi_0"]);
+    } catch (std::runtime_error &e) {}
     
     // sample aux_sigma2
-    aux_sigma2        = sample_variances_msh(aux_sigma2, aux_B, aux_A, Y, X, aux_xi, prior);
+    U                 = aux_B * (Y - aux_A * X) / aux_lambda_sqrt;
+    try {
+      aux_sigma2        = sample_variances_msh(aux_sigma2, U, aux_xi, prior);
+    } catch (std::runtime_error &e) {}
+    
     for (int t=0; t<T; t++) {
       aux_sigma.col(t)    = pow( aux_sigma2.col(aux_xi.col(t).index_max()) , 0.5 );
     }
+    aux_hetero      = aux_sigma % aux_lambda_sqrt;
+    
+    // sample aux_hyper
+    try {
+      aux_hyper         = sample_hyperparameters(aux_hyper, aux_B, aux_A, VB, VA, prior);
+    } catch (std::runtime_error &e) {}
+    
+    // sample aux_B
+    try {
+      aux_B             = sample_B_heterosk1(aux_B, aux_A, aux_hyper, aux_hetero, Y, X, prior, VB);
+    } catch (std::runtime_error &e) {}
+    
+    // sample aux_A
+    try {
+      aux_A             = sample_A_heterosk1(aux_A, aux_B, aux_hyper, aux_hetero, Y, X, prior, VA);
+    } catch (std::runtime_error &e) {}
+    U                 = aux_B * (Y - aux_A * X) / aux_sigma;
     
     if (s % thin == 0) {
       posterior_B.slice(ss)      = aux_B;
@@ -118,6 +173,8 @@ Rcpp::List bsvar_msh_cpp (
       posterior_xi.slice(ss)     = aux_xi;
       posterior_hyper.slice(ss)  = aux_hyper;
       posterior_sigma.slice(ss)  = aux_sigma;
+      posterior_lambda.slice(ss) = aux_lambda;
+      posterior_df.col(ss)       = aux_df;
       ss++;
     }
   } // END s loop
@@ -131,7 +188,9 @@ Rcpp::List bsvar_msh_cpp (
       _["pi_0"]     = aux_pi_0,
       _["xi"]       = aux_xi,
       _["hyper"]    = aux_hyper,
-      _["sigma"]    = aux_sigma
+      _["sigma"]    = aux_sigma,
+      _["lambda"]   = aux_lambda,
+      _["df"]       = aux_df
     ),
     _["posterior"]  = List::create(
       _["B"]        = posterior_B,
@@ -141,8 +200,9 @@ Rcpp::List bsvar_msh_cpp (
       _["pi_0"]     = posterior_pi_0,
       _["xi"]       = posterior_xi,
       _["hyper"]    = posterior_hyper,
-      _["sigma"]    = posterior_sigma
+      _["sigma"]    = posterior_sigma,
+      _["lambda"]   = posterior_lambda,
+      _["df"]       = posterior_df
     )
   );
 } // END bsvar_msh
-

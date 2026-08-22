@@ -26,17 +26,8 @@ covariance stationary data. Application to unit-root non-stationary data might
 result in non-interpretable outcomes.
 }
 \examples{
-# upload data
-data(us_fiscal_lsuw)
-
-# specify the model and set seed
-set.seed(123)
 specification  = specify_bsvar_sv$new(us_fiscal_lsuw, p = 1)
-
-# run the burn-in
 burn_in        = estimate(specification, 5)
-
-# estimate the model
 posterior      = estimate(burn_in, 5)
 
 # compute historical decompositions
@@ -44,7 +35,6 @@ hd             = compute_historical_decompositions(posterior)
 
 # workflow with the pipe |>
 ############################################################
-set.seed(123)
 us_fiscal_lsuw |>
   specify_bsvar_sv$new(p = 1) |>
   estimate(S = 5) |> 
@@ -56,7 +46,7 @@ us_fiscal_lsuw |>
 Kilian, L., & Lütkepohl, H. (2017). Structural VAR Tools, Chapter 4, In: Structural vector autoregressive analysis. Cambridge University Press.
 }
 \seealso{
-\code{\link{estimate}}, \code{\link{normalise_posterior}}, \code{\link{summary}}
+\code{\link{estimate}}, \code{\link{normalise}}, \code{\link{summary}}
 }
 \author{
 Tomasz Woźniak \email{wozniak.tom@pm.me}

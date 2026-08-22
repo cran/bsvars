@@ -26,29 +26,19 @@ packages \pkg{bsvars} or \pkg{bsvarSIGNs} is transformed into
 a draw from the posterior distribution of the impulse responses.
 }
 \examples{
-# upload data
-data(us_fiscal_lsuw)
-
-# specify the model and set seed
-set.seed(123)
 specification  = specify_bsvar_mix$new(us_fiscal_lsuw, p = 1, M = 2)
+burn_in        = estimate(specification, 5)
+posterior      = estimate(burn_in, 5)
 
-# run the burn-in
-burn_in        = estimate(specification, 10)
-
-# estimate the model
-posterior      = estimate(burn_in, 20)
-
-# compute impulse responses
-irfs            = compute_impulse_responses(posterior, 4)
+# compute impulse responses 2 years ahead
+irf           = compute_impulse_responses(posterior, horizon = 8)
 
 # workflow with the pipe |>
 ############################################################
-set.seed(123)
 us_fiscal_lsuw |>
   specify_bsvar_mix$new(p = 1, M = 2) |>
-  estimate(S = 10) |> 
-  estimate(S = 20) |> 
+  estimate(S = 5) |> 
+  estimate(S = 5) |> 
   compute_impulse_responses(horizon = 4) -> irfs
   
 }
@@ -56,7 +46,7 @@ us_fiscal_lsuw |>
 Kilian, L., & Lütkepohl, H. (2017). Structural VAR Tools, Chapter 4, In: Structural vector autoregressive analysis. Cambridge University Press.
 }
 \seealso{
-\code{\link{estimate}}, \code{\link{normalise_posterior}}, \code{\link{summary}}
+\code{\link{estimate}}, \code{\link{normalise}}, \code{\link{summary}}
 }
 \author{
 Tomasz Woźniak \email{wozniak.tom@pm.me}

@@ -30,7 +30,16 @@ arma::vec mvnrnd_cond (
   vec   mu_cond     = mu1 + Sigma12 * Sigma22_inv * (x2 - mu2);
   mat   Sigma_cond  = Sigma11 - Sigma12 * Sigma22_inv * Sigma12.t();
   
-  vec   draw = mvnrnd( mu_cond, Sigma_cond);
+  vec   draw(N);
+  try {
+    draw = mvnrnd( mu_cond, Sigma_cond);
+  } 
+  catch (std::logic_error &e) {
+    throw std::runtime_error("Error: sampling the draw was unsuccesful.");
+  }
+  catch (std::runtime_error &e) {
+    throw std::runtime_error("Error: sampling the draw was unsuccesful.");
+  }
   
   vec   out = aj.cols(ind_nan) * draw + aj.cols(ind) * x2;
   return out;
@@ -75,6 +84,44 @@ arma::cube forecast_sigma2_msh (
 
 
 
+
+// [[Rcpp::interfaces(cpp, r)]]
+// [[Rcpp::export]]
+arma::cube forecast_sigma2_hmsh (
+    arma::cube&               posterior_sigma2,   // (N, M, S)
+    arma::field<arma::cube>&  posterior_PR_TR,    // (S)(M, M, N)
+    arma::cube&               S_T,                // (M,N,S)
+    const int&                horizon
+) {
+  
+  const int       N = posterior_sigma2.n_rows;
+  const int       M = posterior_sigma2.n_cols;
+  const int       S = posterior_sigma2.n_slices;
+  
+  cube            forecasts_sigma2(N, horizon, S);
+  
+  for (int s=0; s<S; s++) {
+    
+    for (int n=0; n<N; n++) {
+      int St(M);
+      vec PR_ST             = S_T.slice(s).col(n);
+      NumericVector zeroM   = wrap(seq_len(M) - 1);
+      
+      for (int h=0; h<horizon; h++) {
+        PR_ST       = trans(posterior_PR_TR(s).slice(n)) * PR_ST;
+        St          = csample_num1(zeroM, wrap(PR_ST));
+        forecasts_sigma2(n, h, s) = posterior_sigma2(n, St, s);
+      } // END h loop
+      
+    } // END n loop
+  } // END s loop
+  
+  return forecasts_sigma2;
+} // END forecast_sigma2_hmsh
+
+
+
+
 // [[Rcpp::interfaces(cpp)]]
 // [[Rcpp::export]]
 arma::cube forecast_sigma2_sv (
@@ -101,10 +148,11 @@ arma::cube forecast_sigma2_sv (
         xx        = randn();
         if ( centred_sv ) {
           ht(n)     = posterior_rho(n, s) * ht(n) + posterior_omega(n, s) * xx;
+          forecasts_sigma2(n, h, s) = exp(ht(n));
         } else {
-          ht(n)     = posterior_omega(n, s) * (posterior_rho(n, s) * ht(n) + xx);
+          ht(n)     = posterior_rho(n, s) * ht(n) + xx;
+          forecasts_sigma2(n, h, s) = exp(posterior_omega(n, s) * ht(n));
         }
-        forecasts_sigma2(n, h, s) = exp(ht(n));
       } // END n loop
     } // END h loop
   } // END s loop
@@ -118,20 +166,20 @@ arma::cube forecast_sigma2_sv (
 
 // [[Rcpp::interfaces(cpp)]]
 // [[Rcpp::export]]
-arma::mat forecast_lambda_t (
-    arma::mat&    posterior_df,      // Sx1
+arma::cube forecast_lambda_t (
+    arma::mat&    posterior_df,      // NxS
     const int&    horizon
 ) {
   
-  const int       S = posterior_df.n_rows;
-  mat             forecasts_lambda(horizon, S, fill::ones);
+  const int       N = posterior_df.n_rows;
+  const int       S = posterior_df.n_cols;
+  cube            forecasts_lambda(N, horizon, S, fill::ones);
   
   for (int s=0; s<S; s++) {
-    for (int h=0; h<horizon; h++) {
-      double df_s               = as_scalar(posterior_df.row(s));
-      forecasts_lambda.col(s)   *= df_s + 2;
-      forecasts_lambda.col(s)  /= chi2rnd( df_s, horizon );
-    } // END h loop
+    vec df_s = posterior_df.col(s);
+    for (int n=0; n<N; n++) {
+      forecasts_lambda.slice(s).row(n) = (df_s(n) - 2.0) / trans(chi2rnd(df_s(n), horizon));
+    } // END n loop
   } // END s loop
   
   return forecasts_lambda;
@@ -143,7 +191,7 @@ arma::mat forecast_lambda_t (
 
 // [[Rcpp::interfaces(cpp)]]
 // [[Rcpp::export]]
-arma::cube forecast_bsvars (
+Rcpp::List forecast_bsvars (
     arma::cube&   posterior_B,        // (N, N, S)
     arma::cube&   posterior_A,        // (N, K, S)
     arma::cube&   forecast_sigma2,    // (N, horizon, S)
@@ -167,7 +215,12 @@ arma::cube forecast_bsvars (
   } // END if do_exog
   
   vec         Xt(K);
-  cube        forecasts(N, horizon, S);
+  
+  cube        out_forecast(N, horizon, S);
+  cube        out_forecast_mean(N, horizon, S);
+  field<cube> out_forecast_cov(S);
+  cube        SigmaT(N, N, horizon);
+  vec         draw(N);
   
   for (int s=0; s<S; s++) {
     
@@ -182,28 +235,47 @@ arma::cube forecast_bsvars (
       mat   B_inv             = inv(posterior_B.slice(s));
       mat   s2_diag           = diagmat(forecast_sigma2.slice(s).col(h));
       mat   Sigma             = B_inv * s2_diag * B_inv.t();
-        
+      Sigma                   = 0.5 * (Sigma + Sigma.t());
+      SigmaT.slice(h) = Sigma;
       vec   cond_forecast_h   = trans(cond_forecast.row(h));
       uvec  nonf_el           = find_nonfinite( cond_forecast_h );
       int   nonf_no           = nonf_el.n_elem;
+      out_forecast_mean.slice(s).col(h) = posterior_A.slice(s) * Xt;
       
       if ( nonf_no == N ) {
-        forecasts.slice(s).col(h) = mvnrnd( posterior_A.slice(s) * Xt, Sigma );
+        try {
+          draw        = mvnrnd( out_forecast_mean.slice(s).col(h), Sigma );
+        } 
+        catch (std::logic_error &e) {break;}
+        catch (std::runtime_error &e) {break;}
       } else {
-        forecasts.slice(s).col(h) = mvnrnd_cond( cond_forecast_h, posterior_A.slice(s) * Xt, Sigma );   // does not work if cond_fc_h is all nan
+        try {
+          draw        = mvnrnd_cond( cond_forecast_h, out_forecast_mean.slice(s).col(h), Sigma );   // does not work if cond_fc_h is all nan
+        } 
+        catch (std::logic_error &e) {break;}
+        catch (std::runtime_error &e) {break;}
       } // END if nonf_no
+      out_forecast.slice(s).col(h) = draw;
+      
       
       if ( h != horizon - 1 ) {
         if ( do_exog ) {
-          Xt          = join_cols( forecasts.slice(s).col(h), Xt.subvec(N, K - 1 - d), trans(exogenous_forecast.row(h + 1)) );
+          Xt          = join_cols( out_forecast.slice(s).col(h), Xt.subvec(N, K - 1 - d), trans(exogenous_forecast.row(h + 1)) );
         } else {
-          Xt          = join_cols( forecasts.slice(s).col(h), Xt.subvec(N, K - 1) );
+          Xt          = join_cols( out_forecast.slice(s).col(h), Xt.subvec(N, K - 1) );
         }
       } // END if h
       
     } // END h loop
+    
+    out_forecast_cov(s) = SigmaT;
+    
   } // END s loop
   
-  return forecasts;
+  return List::create(
+    _["forecasts"]       = out_forecast,
+    _["forecast_mean"]  = out_forecast_mean,
+    _["forecast_cov"]   = out_forecast_cov
+  );
 } // END forecast_bsvar
 

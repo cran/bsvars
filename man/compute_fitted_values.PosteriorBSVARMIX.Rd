@@ -21,29 +21,19 @@ packages \pkg{bsvars} or \pkg{bsvarSIGNs} is transformed into
 a draw from the data predictive density.
 }
 \examples{
-# upload data
-data(us_fiscal_lsuw)
-
-# specify the model and set seed
-set.seed(123)
-specification  = specify_bsvar_mix$new(us_fiscal_lsuw, p = 1, M = 2)
-
-# run the burn-in
-burn_in        = estimate(specification, 10)
-
-# estimate the model
-posterior      = estimate(burn_in, 20)
+specification  = specify_bsvar_mix$new(us_fiscal_lsuw, M = 2)
+burn_in        = estimate(specification, 5)
+posterior      = estimate(burn_in, 5)
 
 # compute draws from in-sample predictive density
 csd     = compute_fitted_values(posterior)
 
 # workflow with the pipe |>
 ############################################################
-set.seed(123)
 us_fiscal_lsuw |>
-  specify_bsvar_mix$new(p = 1, M = 2) |>
-  estimate(S = 10) |> 
-  estimate(S = 20) |> 
+  specify_bsvar_mix$new(M = 2) |>
+  estimate(S = 5) |> 
+  estimate(S = 5) |> 
   compute_fitted_values() -> csd
   
 }

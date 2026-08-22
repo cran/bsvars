@@ -40,6 +40,39 @@ expect_error(
 )
 
 
+# for specify_forecasts
+expect_true(
+  inherits(ff, "Forecasts"),
+  info = "specify_forecasts: output class is Forecasts."
+)
+
+
+# objects
+expect_true(
+  all(c(
+    "forecasts",
+    "forecast_mean",
+    "forecast_covariance"
+  ) %in% names(ff)),
+  info = "specify_forecasts: provides elements forecasts, forecast_mean, and forecast_covariance."
+)
+
+# forecasts is a numeric array
+expect_true(
+  is.array(ff$forecasts),
+  info = "specify_forecasts: output forecasts is an array."
+)
+expect_true(
+  is.numeric(ff$forecasts),
+  info = "specify_forecasts: output forecasts is numeric."
+)
+
+
+
+
+
+
+
 
 
 # for bsvar_msh
@@ -65,8 +98,8 @@ expect_identical(
 )
 
 expect_identical(
-  ff$forecasts_sigma[1,1,1], ff2$forecasts_sigma[1,1,1],
-  info = "forecast: msh: sigma forecast identical for normal and pipe workflow."
+  ff$forecast_mean[1,1,1], ff2$forecast_mean[1,1,1],
+  info = "forecast: msh: forecast_mean identical for normal and pipe workflow."
 )
 
 
@@ -76,8 +109,8 @@ expect_true(
 )
 
 expect_true(
-  is.numeric(ff$forecasts_sigma) & is.array(ff$forecasts_sigma),
-  info = "forecast: msh: volatility: returns numeric array."
+  is.numeric(ff$forecast_mean) & is.array(ff$forecast_mean),
+  info = "forecast: msh: forecast_mean: returns numeric array."
 )
 
 expect_error(
@@ -114,8 +147,8 @@ expect_identical(
 )
 
 expect_identical(
-  ff$forecasts_sigma[1,1,1], ff2$forecasts_sigma[1,1,1],
-  info = "forecast: mix: sigma forecast identical for normal and pipe workflow."
+  ff$forecast_mean[1,1,1], ff2$forecast_mean[1,1,1],
+  info = "forecast: mix: forecast_mean identical for normal and pipe workflow."
 )
 
 
@@ -125,8 +158,8 @@ expect_true(
 )
 
 expect_true(
-  is.numeric(ff$forecasts_sigma) & is.array(ff$forecasts_sigma),
-  info = "forecast: mix: volatility: returns numeric array."
+  is.numeric(ff$forecast_mean) & is.array(ff$forecast_mean),
+  info = "forecast: mix: forecast_mean: returns numeric array."
 )
 
 expect_error(
@@ -163,8 +196,8 @@ expect_identical(
 )
 
 expect_identical(
-  ff$forecasts_sigma[1,1,1], ff2$forecasts_sigma[1,1,1],
-  info = "forecast: sv: sigma forecast identical for normal and pipe workflow."
+  ff$forecast_mean[1,1,1], ff2$forecast_mean[1,1,1],
+  info = "forecast: sv: forecast_mean identical for normal and pipe workflow."
 )
 
 
@@ -174,8 +207,8 @@ expect_true(
 )
 
 expect_true(
-  is.numeric(ff$forecasts_sigma) & is.array(ff$forecasts_sigma),
-  info = "forecast: sv: volatility: returns numeric array."
+  is.numeric(ff$forecast_mean) & is.array(ff$forecast_mean),
+  info = "forecast: sv: forecast_mean: returns numeric array."
 )
 
 expect_error(
@@ -212,8 +245,8 @@ expect_identical(
 )
 
 expect_identical(
-  ff$forecasts_sigma[1,1,1], ff2$forecasts_sigma[1,1,1],
-  info = "forecast: sv centred: sigma forecast identical for normal and pipe workflow."
+  ff$forecast_mean[1,1,1], ff2$forecast_mean[1,1,1],
+  info = "forecast: sv centred: forecast_mean identical for normal and pipe workflow."
 )
 
 
@@ -244,8 +277,8 @@ expect_identical(
 )
 
 expect_identical(
-  ff$forecasts_sigma[1,1,1], ff2$forecasts_sigma[1,1,1],
-  info = "forecast: t: sigma forecast identical for normal and pipe workflow."
+  ff$forecast_mean[1,1,1], ff2$forecast_mean[1,1,1],
+  info = "forecast: t: forecast_mean identical for normal and pipe workflow."
 )
 
 
@@ -283,7 +316,7 @@ expect_true(
   info = "conditonal forecast: returns numeric array."
 )
 
-expect_error(
+expect_message(
   forecast(run_no1, horizon = 3, conditional_forecast = cf),
   info = "conditonal forecast: wrong value of horizon."
 )
@@ -312,8 +345,8 @@ expect_identical(
 )
 
 expect_identical(
-  ff$forecasts_sigma[1,1,1], ff2$forecasts_sigma[1,1,1],
-  info = "conditonal forecast: msh: sigma forecast identical for normal and pipe workflow."
+  ff$forecast_mean[1,1,1], ff2$forecast_mean[1,1,1],
+  info = "conditonal forecast: msh: forecast_mean identical for normal and pipe workflow."
 )
 
 
@@ -341,8 +374,8 @@ expect_identical(
 )
 
 expect_identical(
-  ff$forecasts_sigma[1,1,1], ff2$forecasts_sigma[1,1,1],
-  info = "conditonal forecast: mix: sigma forecast identical for normal and pipe workflow."
+  ff$forecast_mean[1,1,1], ff2$forecast_mean[1,1,1],
+  info = "conditonal forecast: mix: forecast_mean identical for normal and pipe workflow."
 )
 
 expect_true(
@@ -379,8 +412,8 @@ expect_identical(
 )
 
 expect_identical(
-  ff$forecasts_sigma[1,1,1], ff2$forecasts_sigma[1,1,1],
-  info = "conditonal forecast: sv: sigma forecast identical for normal and pipe workflow."
+  ff$forecast_mean[1,1,1], ff2$forecast_mean[1,1,1],
+  info = "conditonal forecast: sv: forecast_mean identical for normal and pipe workflow."
 )
 
 
@@ -409,7 +442,69 @@ expect_identical(
 )
 
 expect_identical(
-  ff$forecasts_sigma[1,1,1], ff2$forecasts_sigma[1,1,1],
-  info = "conditonal forecast: t: sigma forecast identical for normal and pipe workflow."
+  ff$forecast_mean[1,1,1], ff2$forecast_mean[1,1,1],
+  info = "conditonal forecast: t: forecast_mean identical for normal and pipe workflow."
+)
+
+
+
+# for bsvar_hmsh
+set.seed(1)
+suppressMessages(
+  specification_no1 <- specify_bsvar_hmsh$new(us_fiscal_lsuw)
+)
+run_no1             <- estimate(specification_no1, 3, 1, show_progress = FALSE)
+ff                  <- forecast(run_no1, horizon = 2)
+
+set.seed(1)
+suppressMessages(
+  ff2              <- us_fiscal_lsuw |>
+    specify_bsvar_hmsh$new() |>
+    estimate(S = 3, thin = 1, show_progress = FALSE) |>
+    forecast(horizon = 2)
+)
+
+
+expect_identical(
+  ff$forecasts[1,1,1], ff2$forecasts[1,1,1],
+  info = "conditonal forecast: hmsh: forecast identical for normal and pipe workflow."
+)
+
+expect_identical(
+  ff$forecast_mean[1,1,1], ff2$forecast_mean[1,1,1],
+  info = "conditonal forecast: hmsh: forecast_mean identical for normal and pipe workflow."
+)
+
+
+
+
+
+
+
+# for bsvar_exh
+set.seed(1)
+suppressMessages(
+  specification_no1 <- specify_bsvar_exh$new(us_fiscal_lsuw)
+)
+run_no1             <- estimate(specification_no1, 3, 1, show_progress = FALSE)
+ff                  <- forecast(run_no1, horizon = 2)
+
+set.seed(1)
+suppressMessages(
+  ff2              <- us_fiscal_lsuw |>
+    specify_bsvar_exh$new() |>
+    estimate(S = 3, thin = 1, show_progress = FALSE) |>
+    forecast(horizon = 2)
+)
+
+
+expect_identical(
+  ff$forecasts[1,1,1], ff2$forecasts[1,1,1],
+  info = "conditonal forecast: hmsh: forecast identical for normal and pipe workflow."
+)
+
+expect_identical(
+  ff$forecast_mean[1,1,1], ff2$forecast_mean[1,1,1],
+  info = "conditonal forecast: hmsh: forecast_mean identical for normal and pipe workflow."
 )
 

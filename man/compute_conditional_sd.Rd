@@ -9,7 +9,7 @@ compute_conditional_sd(posterior)
 \arguments{
 \item{posterior}{posterior estimation outcome obtained by running the 
 \code{estimate} function. The interpretation depends on the normalisation of 
-the shocks using function \code{normalise_posterior()}. Verify if the default 
+the shocks using function \code{normalise()}. Verify if the default 
 settings are appropriate.}
 }
 \value{
@@ -23,34 +23,22 @@ transformed into a draw from the posterior distribution of the structural
 shock conditional standard deviations.
 }
 \examples{
-# upload data
-data(us_fiscal_lsuw)
-
-# specify the model and set seed
-set.seed(123)
-specification  = specify_bsvar$new(us_fiscal_lsuw, p = 1)
-
-# run the burn-in
-burn_in        = estimate(specification, 10)
-
-# estimate the model
-posterior      = estimate(burn_in, 20)
-
-# compute structural shocks' conditional standard deviations
+specification  = specify_bsvar$new(us_fiscal_lsuw)
+burn_in        = estimate(specification, 5)
+posterior      = estimate(burn_in, 5)
 sigma          = compute_conditional_sd(posterior)
 
 # workflow with the pipe |>
 ############################################################
-set.seed(123)
 us_fiscal_lsuw |>
-  specify_bsvar$new(p = 1) |>
-  estimate(S = 10) |> 
-  estimate(S = 20) |> 
+  specify_bsvar$new() |>
+  estimate(S = 5) |> 
+  estimate(S = 5) |> 
   compute_conditional_sd() -> csd
 
 }
 \seealso{
-\code{\link{estimate}}, \code{\link{normalise_posterior}}, \code{\link{summary}}
+\code{\link{estimate}}, \code{\link{normalise}}, \code{\link{summary}}
 }
 \author{
 Tomasz Woźniak \email{wozniak.tom@pm.me}

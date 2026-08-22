@@ -36,10 +36,10 @@ arma::field<arma::cube> bsvars_fevd_heterosk (
 
 
 arma::cube bsvars_structural_shocks (
-    const arma::cube&     posterior_B,    // (N, N, S)
-    const arma::cube&     posterior_A,    // (N, K, S)
-    const arma::mat&      Y,              // NxT dependent variables
-    const arma::mat&      X               // KxT dependent variables
+    arma::cube&     posterior_B,    // (N, N, S)
+    arma::cube&     posterior_A,    // (N, K, S)
+    arma::mat&      Y,              // NxT dependent variables
+    arma::mat&      X               // KxT dependent variables
 );
 
 
@@ -58,6 +58,15 @@ arma::cube bsvars_fitted_values (
 
 
 arma::cube bsvars_filter_forecast_smooth (
+    Rcpp::List&       posterior,
+    const arma::mat&  Y,
+    const arma::mat&  X,
+    const bool        forecasted,
+    const bool        smoothed
+);
+
+
+arma::field<arma::cube> bsvars_filter_forecast_smooth_hmsh (
     Rcpp::List&       posterior,
     const arma::mat&  Y,
     const arma::mat&  X,

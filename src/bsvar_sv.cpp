@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "sample_ABhyper.h"
 #include "sv.h"
+#include "sample_t.h"
 
 using namespace Rcpp;
 using namespace arma;
@@ -19,7 +20,9 @@ Rcpp::List bsvar_sv_cpp (
     const arma::mat&              X,          // KxT explanatory variables
     const Rcpp::List&             prior,      // a list of priors - original dimensions
     const arma::field<arma::mat>& VB,         // restrictions on B0
+    const arma::field<arma::mat>& VA,         // N-list
     const Rcpp::List&             starting_values, 
+    const bool                    normal = true,
     const int                     thin = 100, // introduce thinning
     const bool                    centred_sv = false,
     const bool                    show_progress = true
@@ -53,6 +56,8 @@ Rcpp::List bsvar_sv_cpp (
   }
   Progress p(50, show_progress);
   
+  const vec adptive_alpha_gamma = as<vec>(NumericVector::create(0.44, 0.6));
+  
   const int   T     = Y.n_cols;
   const int   N     = Y.n_rows;
   const int   K     = X.n_rows;
@@ -68,6 +73,11 @@ Rcpp::List bsvar_sv_cpp (
   vec   aux_sigma2_omega = as<vec>(starting_values["sigma2_omega"]);
   vec   aux_s_      = as<vec>(starting_values["s_"]);
   mat   aux_sigma(N, T);
+  mat   aux_lambda  = as<mat>(starting_values["lambda"]);
+  mat   aux_lambda_sqrt(N, T, fill::ones);
+  mat   aux_hetero(N, T, fill::ones);
+  vec   aux_df      = as<vec>(starting_values["df"]);
+  mat   U;
   
   if ( centred_sv ) {
     for (int n=0; n<N; n++) {
@@ -78,6 +88,8 @@ Rcpp::List bsvar_sv_cpp (
       aux_sigma.row(n) = exp(0.5 * aux_omega(n) * aux_h.row(n));
     }
   }
+  
+  aux_hetero = aux_sigma % aux_lambda_sqrt;
   
   const int   SS     = floor(S / thin);
   
@@ -92,6 +104,18 @@ Rcpp::List bsvar_sv_cpp (
   mat   posterior_sigma2_omega(N, SS);
   mat   posterior_s_(N, SS);
   cube  posterior_sigma(N, T, SS);
+  cube  posterior_lambda(N, T, SS);
+  mat   posterior_df(N, SS);
+  
+  // the initial proposal variance is the inverse negative Hessian of the
+  // posterior log-kernel for df evaluated at df = 30
+  const double df_reference = 30;
+  const double negative_hessian =
+    0.25 * T * R::psigamma(0.5 * df_reference, 1) -
+    0.5 * T * (df_reference - 4) * std::pow(df_reference - 2, -2) -
+    2 * std::pow(df_reference - 1, -2);
+  double  adaptive_scale_init = 1 / std::sqrt(negative_hessian);
+  vec     adaptive_scale(N, fill::value(adaptive_scale_init));
   
   int   ss = 0;
   
@@ -102,17 +126,24 @@ Rcpp::List bsvar_sv_cpp (
     // Check for user interrupts
     if (s % 200 == 0) checkUserInterrupt();
     
-    // sample aux_hyper
-    aux_hyper       = sample_hyperparameters( aux_hyper, aux_B, aux_A, VB, prior);
     
-    // sample aux_B
-    aux_B           = sample_B_heterosk1(aux_B, aux_A, aux_hyper, aux_sigma, Y, X, prior, VB);
-    
-    // sample aux_A
-    aux_A           = sample_A_heterosk1(aux_A, aux_B, aux_hyper, aux_sigma, Y, X, prior);
+    if ( !normal ) {
+      try {
+        List df_tmp     = sample_df ( aux_df, adaptive_scale, aux_lambda, s, adptive_alpha_gamma );
+        aux_df          = as<vec>(df_tmp["aux_df"]);
+        adaptive_scale  = as<vec>(df_tmp["adaptive_scale"]);
+      } catch (std::runtime_error &e) {}
+      
+      U               = aux_B * (Y - aux_A * X) / aux_sigma;
+      try {
+        aux_lambda      = sample_lambda ( aux_df, U );
+        aux_lambda_sqrt = sqrt(aux_lambda);
+        aux_hetero      = aux_sigma % aux_lambda_sqrt;
+      } catch (std::runtime_error &e) {}
+    }
     
     // sample aux_h, aux_omega and aux_S, aux_sigma2_omega
-    mat U = aux_B * (Y - aux_A * X);
+    U               = aux_B * (Y - aux_A * X) / aux_lambda_sqrt;
     
     for (int n=0; n<N; n++) {
       rowvec  h_tmp     = aux_h.row(n);
@@ -126,9 +157,13 @@ Rcpp::List bsvar_sv_cpp (
       
       List sv_n;
       if ( centred_sv ) {
-        sv_n            = svar_ce1( h_tmp, rho_tmp, omega_tmp, sigma2v_tmp, s2o_tmp, s_n, S_tmp, U_tmp, prior, true );
+        try {
+          sv_n            = svar_ce1( h_tmp, rho_tmp, omega_tmp, sigma2v_tmp, s2o_tmp, s_n, S_tmp, U_tmp, prior, true );
+        } catch (std::runtime_error &e) {}
       } else {
-        sv_n            = svar_nc1( h_tmp, rho_tmp, omega_tmp, sigma2v_tmp, s2o_tmp, s_n, S_tmp, U_tmp, prior, true );
+        try {
+          sv_n            = svar_nc1( h_tmp, rho_tmp, omega_tmp, sigma2v_tmp, s2o_tmp, s_n, S_tmp, U_tmp, prior, true );
+        } catch (std::runtime_error &e) {}
       }
 
       aux_h.row(n)      = as<rowvec>(sv_n["aux_h_n"]);
@@ -145,6 +180,22 @@ Rcpp::List bsvar_sv_cpp (
         aux_sigma.row(n)  = exp(0.5 * aux_omega(n) * aux_h.row(n));
       }
     }
+    aux_hetero      = aux_sigma % aux_lambda_sqrt;
+    
+    // sample aux_hyper
+    try {
+      aux_hyper       = sample_hyperparameters( aux_hyper, aux_B, aux_A, VB, VA, prior);
+    } catch (std::runtime_error &e) {}
+    
+    // sample aux_B
+    try {
+      aux_B           = sample_B_heterosk1(aux_B, aux_A, aux_hyper, aux_hetero, Y, X, prior, VB);
+    } catch (std::runtime_error &e) {}
+    
+    // sample aux_A
+    try {
+      aux_A           = sample_A_heterosk1(aux_A, aux_B, aux_hyper, aux_hetero, Y, X, prior, VA);
+    } catch (std::runtime_error &e) {}
     
     if (s % thin == 0) {
       posterior_B.slice(ss)          = aux_B;
@@ -158,6 +209,8 @@ Rcpp::List bsvar_sv_cpp (
       posterior_sigma2_omega.col(ss) = aux_sigma2_omega;
       posterior_s_.col(ss)           = aux_s_;
       posterior_sigma.slice(ss)      = aux_sigma;
+      posterior_lambda.slice(ss)     = aux_lambda;
+      posterior_df.col(ss)           = aux_df;
       ss++;
     }
   } // END s loop
@@ -174,7 +227,9 @@ Rcpp::List bsvar_sv_cpp (
       _["S"]        = aux_S,
       _["sigma2_omega"] = aux_sigma2_omega,
       _["s_"]       = aux_s_,
-      _["sigma"]    = aux_sigma
+      _["sigma"]    = aux_sigma,
+      _["lambda"]   = aux_lambda,
+      _["df"]       = aux_df
     ),
     _["posterior"]  = List::create(
       _["B"]        = posterior_B,
@@ -187,9 +242,9 @@ Rcpp::List bsvar_sv_cpp (
       _["S"]        = posterior_S,
       _["sigma2_omega"] = posterior_sigma2_omega,
       _["s_"]        = posterior_s_,
-      _["sigma"]    = posterior_sigma
+      _["sigma"]    = posterior_sigma,
+      _["lambda"]   = posterior_lambda,
+      _["df"]       = posterior_df
     )
   );
 } // END bsvar_sv_cpp
-
-

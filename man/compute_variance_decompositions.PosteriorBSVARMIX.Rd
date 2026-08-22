@@ -25,29 +25,19 @@ variance decompositions are computed for the forecasts with the origin at the
 last observation in sample data and using the conditional variance forecasts.
 }
 \examples{
-# upload data
-data(us_fiscal_lsuw)
-
-# specify the model and set seed
-set.seed(123)
 specification  = specify_bsvar_mix$new(us_fiscal_lsuw, p = 1, M = 2)
-
-# run the burn-in
-burn_in        = estimate(specification, 10)
-
-# estimate the model
-posterior      = estimate(burn_in, 20)
+burn_in        = estimate(specification, 5)
+posterior      = estimate(burn_in, 5)
 
 # compute forecast error variance decomposition 2 years ahead
 fevd           = compute_variance_decompositions(posterior, horizon = 8)
 
 # workflow with the pipe |>
 ############################################################
-set.seed(123)
 us_fiscal_lsuw |>
   specify_bsvar_mix$new(p = 1, M = 2) |>
-  estimate(S = 10) |> 
-  estimate(S = 20) |> 
+  estimate(S = 5) |> 
+  estimate(S = 5) |> 
   compute_variance_decompositions(horizon = 8) -> fevd
 
 }
@@ -55,7 +45,7 @@ us_fiscal_lsuw |>
 Kilian, L., & Lütkepohl, H. (2017). Structural VAR Tools, Chapter 4, In: Structural vector autoregressive analysis. Cambridge University Press.
 }
 \seealso{
-\code{\link{compute_impulse_responses}}, \code{\link{estimate}}, \code{\link{normalise_posterior}}, \code{\link{summary}}
+\code{\link{compute_impulse_responses}}, \code{\link{estimate}}, \code{\link{normalise}}, \code{\link{summary}}
 }
 \author{
 Tomasz Woźniak \email{wozniak.tom@pm.me}

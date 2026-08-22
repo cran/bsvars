@@ -10,7 +10,7 @@
 #' Additionally, the parameter matrices \eqn{A} and \eqn{B}
 #' follow a Minnesota prior and generalised-normal prior distributions respectively 
 #' with the matrix-specific overall shrinkage parameters estimated using a 
-#' hierarchical prior distribution as in Lütkepohl, Shang, Uzeda, and Woźniak (2024). 
+#' hierarchical prior distribution as in Lütkepohl, Shang, Uzeda, and Woźniak (2025). 
 #' See section \bold{Details} for the model equations.
 #' 
 #' @details 
@@ -29,15 +29,15 @@
 #' 
 #' Finally, the structural shocks, \code{U}, are temporally and contemporaneously 
 #' independent and jointly Student-t distributed with zero mean, unit variances, 
-#' and an estimated degrees-of-freedom parameter.
+#' and estimated equation-specific degrees-of-freedom parameter.
 #' 
-#' @param specification an object of class BSVART generated using the 
+#' @param specification an object of class \code{BSVART} generated using the 
 #' \code{specify_bsvar_t$new()} function.
 #' @param S a positive integer, the number of posterior draws to be generated
 #' @param thin a positive integer, specifying the frequency of MCMC output thinning
 #' @param show_progress a logical value, if \code{TRUE} the estimation progress bar is visible
 #' 
-#' @return An object of class PosteriorBSVART containing the Bayesian estimation 
+#' @return An object of class \code{PosteriorBSVART} containing the Bayesian estimation 
 #' output and containing two elements:
 #' 
 #'  \code{posterior} a list with a collection of \code{S} draws from the posterior 
@@ -47,16 +47,16 @@
 #'  \item{B}{an \code{NxNxS} array with the posterior draws for matrix \eqn{B}}
 #'  \item{hyper}{a \code{5xS} matrix with the posterior draws for the hyper-parameters 
 #'  of the hierarchical prior distribution}
-#'  \item{df}{an \code{S} vector with the posterior draws for the degrees-of-freedom 
-#'  parameter of the Student-t distribution}
-#'  \item{lambda}{a \code{TxS} matrix with the posterior draws for the latent variable}
+#'  \item{df}{an \code{NxS} matrix with the posterior draws for the 
+#'  equation-specific degrees-of-freedom parameter of the Student-t distribution}
+#'  \item{lambda}{an \code{NxTxS} array with the posterior draws for the latent variable}
 #' }
 #' 
-#' \code{last_draw} an object of class BSVART with the last draw of the current 
+#' \code{last_draw} an object of class \code{BSVART} with the last draw of the current 
 #' MCMC run as the starting value to be passed to the continuation of the MCMC 
 #' estimation using \code{estimate()}. 
 #'
-#' @seealso \code{\link{specify_bsvar_t}}, \code{\link{specify_posterior_bsvar_t}}, \code{\link{normalise_posterior}}
+#' @seealso \code{\link{specify_bsvar_t}}, \code{\link{specify_posterior_bsvar_t}}, \code{\link{normalise}}
 #'
 #' @author Tomasz Woźniak \email{wozniak.tom@pm.me}
 #' 
@@ -64,7 +64,9 @@
 #' 
 #' Chan, J.C.C., Koop, G, and Yu, X. (2024) Large Order-Invariant Bayesian VARs with Stochastic Volatility. \emph{Journal of Business & Economic Statistics}, \bold{42}, \doi{10.1080/07350015.2023.2252039}.
 #' 
-#' Lütkepohl, H., Shang, F., Uzeda, L., and Woźniak, T. (2024) Partial Identification of Heteroskedastic Structural VARs: Theory and Bayesian Inference. \emph{University of Melbourne Working Paper}, 1--57, \doi{10.48550/arXiv.2404.11057}.
+#' Lütkepohl, H., Shang, F., Uzeda, L., and Woźniak, T. (2025) 
+#' Partial identification of structural vector autoregressions with non-centred stochastic volatility. 
+#' \emph{Journal of Econometrics}, 1--18, \doi{10.1016/j.jeconom.2025.106107}.
 #' 
 #' Waggoner, D.F., and Zha, T., (2003) A Gibbs sampler for structural vector autoregressions. \emph{Journal of Economic Dynamics and Control}, \bold{28}, 349--366, \doi{10.1016/S0165-1889(02)00168-9}.
 #' 
@@ -75,26 +77,16 @@
 #' @examples
 #' # simple workflow
 #' ############################################################
-#' # upload data
-#' data(us_fiscal_lsuw)
-#' 
-#' # specify the model and set seed
-#' set.seed(123)
 #' specification  = specify_bsvar_t$new(us_fiscal_lsuw, p = 4)
-#' 
-#' # run the burn-in
 #' burn_in        = estimate(specification, 5)
-#' 
-#' # estimate the model
-#' posterior      = estimate(burn_in, 10, thin = 2)
+#' posterior      = estimate(burn_in, 5)
 #' 
 #' # workflow with the pipe |>
 #' ############################################################
-#' set.seed(123)
 #' us_fiscal_lsuw |>
-#'   specify_bsvar_t$new(p = 1) |>
+#'   specify_bsvar_t$new(p = 4) |>
 #'   estimate(S = 5) |> 
-#'   estimate(S = 10, thin = 2) -> posterior
+#'   estimate(S = 5) -> posterior
 #' 
 #' @export
 estimate.BSVART <- function(specification, S, thin = 1, show_progress = TRUE) {
@@ -102,20 +94,19 @@ estimate.BSVART <- function(specification, S, thin = 1, show_progress = TRUE) {
   # get the inputs to estimation
   prior               = specification$prior$get_prior()
   starting_values     = specification$starting_values$get_starting_values()
-  VB                  = specification$identification$get_identification()
+  VB                  = specification$identification$VB
+  VA                  = specification$identification$VA
   data_matrices       = specification$data_matrices$get_data_matrices()
   adptive_alpha_gamma = specification$adaptiveMH  
   
   # estimation
-  qqq                 = .Call(`_bsvars_bsvar_t_cpp`, S, data_matrices$Y, data_matrices$X, VB, prior, starting_values, adptive_alpha_gamma, thin, show_progress)
+  qqq                 = .Call(`_bsvars_bsvar_t_cpp`, S, data_matrices$Y, data_matrices$X, VB, VA, prior, starting_values, adptive_alpha_gamma, thin, show_progress)
   
   specification$starting_values$set_starting_values(qqq$last_draw)
   output              = specify_posterior_bsvar_t$new(specification, qqq$posterior)
    
   # normalise output
-  BB                  = qqq$last_draw$B
-  BB                  = diag(sign(diag(BB))) %*% BB
-  normalise_posterior(output, BB)
+  output              = normalise(output)
     
   return(output)
 }
@@ -132,26 +123,16 @@ estimate.BSVART <- function(specification, S, thin = 1, show_progress = TRUE) {
 #' @examples
 #' # simple workflow
 #' ############################################################
-#' # upload data
-#' data(us_fiscal_lsuw)
-#' 
-#' # specify the model and set seed
-#' specification  = specify_bsvar_t$new(us_fiscal_lsuw, p = 1)
-#' set.seed(123)
-#' 
-#' # run the burn-in
+#' specification  = specify_bsvar_t$new(us_fiscal_lsuw, p = 4)
 #' burn_in        = estimate(specification, 5)
-#' 
-#' # estimate the model
-#' posterior      = estimate(burn_in, 10, thin = 2)
+#' posterior      = estimate(burn_in, 5)
 #' 
 #' # workflow with the pipe |>
 #' ############################################################
-#' set.seed(123)
 #' us_fiscal_lsuw |>
-#'   specify_bsvar_t$new(p = 1) |>
+#'   specify_bsvar_t$new(p = 4) |>
 #'   estimate(S = 5) |> 
-#'   estimate(S = 10, thin = 2) -> posterior
+#'   estimate(S = 5) -> posterior
 #' 
 #' @export
 estimate.PosteriorBSVART <- function(specification, S, thin = 1, show_progress = TRUE) {
@@ -159,20 +140,19 @@ estimate.PosteriorBSVART <- function(specification, S, thin = 1, show_progress =
   # get the inputs to estimation
   prior               = specification$last_draw$prior$get_prior()
   starting_values     = specification$last_draw$starting_values$get_starting_values()
-  VB                  = specification$last_draw$identification$get_identification()
+  VB                  = specification$last_draw$identification$VB
+  VA                  = specification$last_draw$identification$VA
   data_matrices       = specification$last_draw$data_matrices$get_data_matrices()
   adptive_alpha_gamma = specification$last_draw$adaptiveMH  
   
   # estimation
-  qqq                 = .Call(`_bsvars_bsvar_t_cpp`, S, data_matrices$Y, data_matrices$X, VB, prior, starting_values, adptive_alpha_gamma, thin, show_progress)
+  qqq                 = .Call(`_bsvars_bsvar_t_cpp`, S, data_matrices$Y, data_matrices$X, VB, VA, prior, starting_values, adptive_alpha_gamma, thin, show_progress)
   
   specification$last_draw$starting_values$set_starting_values(qqq$last_draw)
   output              = specify_posterior_bsvar_t$new(specification$last_draw, qqq$posterior)
   
   # normalise output
-  BB                  = qqq$last_draw$B
-  BB                  = diag(sign(diag(BB))) %*% BB
-  normalise_posterior(output, BB)
+  output              = normalise(output)
   
   return(output)
 }
